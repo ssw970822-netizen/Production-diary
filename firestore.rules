@@ -1,18 +1,17 @@
 rules_version = '2';
 
 /* work-dairy-48ffb 프로젝트는 두 앱이 함께 씁니다.
-     기술국 현업일지 (engjlkim-coder.github.io/Work-diary)  : tv_logs, radio_logs
-     기술국 제작일지 (ssw970822-netizen.github.io/Production-diary) : production_logs, production_photos
+     기술국 현업일지 (engjlkim-coder.github.io/Work-diary)          : tv_logs, radio_logs
+     기술국 제작일지 (ssw970822-netizen.github.io/Production-diary) : production_logs
 
    로그인 없이 주소를 아는 사람이면 누구나 읽고 쓸 수 있습니다.
    지금(테스트 모드)과 동작이 같고, 만료 날짜만 없앤 규칙입니다.
-   여기 적힌 네 컬렉션 외의 경로는 Firestore 기본값에 따라 자동으로 차단됩니다. */
+   여기 적힌 세 컬렉션 외의 경로는 Firestore 기본값에 따라 자동으로 차단됩니다. */
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    match /tv_logs/{docId}            { allow read, write: if true; }
-    match /radio_logs/{docId}         { allow read, write: if true; }
-    match /production_logs/{docId}    { allow read, write: if true; }
-    match /production_photos/{docId}  { allow read, write: if true; }
+    match /tv_logs/{docId}         { allow read, write: if true; }
+    match /radio_logs/{docId}      { allow read, write: if true; }
+    match /production_logs/{docId} { allow read, write: if true; }
   }
 }
