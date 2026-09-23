@@ -152,6 +152,7 @@
   .lcard { border:1px solid #aeb8c1; border-radius:8px; padding:8px; margin-bottom:8px; background:#fff; break-inside:avoid; }
   .lc-top { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,.85fr) minmax(0,1.15fr) minmax(0,.95fr) 28px; gap:4px; align-items:center; }
   .lc-3 { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:4px; }
+  .empty-note { font-size:13px; color:#8b98a3; text-align:center; padding:6px 0 2px; }
   .lc-2 { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:4px; }
   .lc-net { margin-top:6px; }
   .lc-side { margin-top:6px; border-radius:6px; padding:5px 6px 6px; }
@@ -184,17 +185,6 @@
     background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>');
   }
 
-  /* photos */
-  .photo-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
-  .photo { border:1px solid #cbd4dc; border-radius:8px; overflow:hidden; background:#fafbfc; position:relative; }
-  .photo .thumb { width:100%; aspect-ratio:4/3; object-fit:cover; display:block; background:#e7edf2; cursor:zoom-in; }
-  .photo .thumb.loading { display:flex; align-items:center; justify-content:center; color:#8b98a3; font-size:12px; }
-  .photo input { border:0; border-top:1px solid #e1e6ea; border-radius:0; font-size:12px; min-height:34px; }
-  .photo .rowdel { position:absolute; top:6px; right:6px; background:#ffffffe6; }
-  .photo .badge { position:absolute; left:6px; top:6px; background:#1f7a5c; color:#fff; font-size:10px; font-weight:700; padding:2px 6px; border-radius:10px; }
-  .photo-add { display:flex; align-items:center; justify-content:center; margin-top:8px; }
-  .photo-add label { width:100%; text-align:center; line-height:38px; cursor:pointer; }
-  .photo-empty { font-size:13px; color:#8b98a3; text-align:center; padding:6px 0 2px; }
 
   /* list page */
   .entry { display:block; width:100%; text-align:left; background:#fff; border:1px solid #cbd4dc; border-radius:9px; padding:12px; margin:8px 0; cursor:pointer; font-family:inherit; color:inherit; }
@@ -259,10 +249,7 @@
   .bk-run { background:var(--navy); border:1px solid var(--navy); color:#fff; }
   .bk-run:disabled { opacity:0.5; cursor:not-allowed; }
 
-  /* photo viewer + toast */
-  .viewer { position:fixed; inset:0; z-index:120; background:rgba(10,14,18,.92); display:none; align-items:center; justify-content:center; padding:16px; }
-  .viewer.open { display:flex; }
-  .viewer img { max-width:100%; max-height:100%; object-fit:contain; border-radius:6px; }
+  /* toast */
   .toast { position:fixed; left:50%; bottom:calc(96px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(10px); background:#17212c; color:#fff; padding:10px 16px; border-radius:20px; font-size:13px; font-weight:600; opacity:0; pointer-events:none; transition:.2s; z-index:130; max-width:90vw; text-align:center; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
   .toast.err { background:var(--sun-red); }
@@ -273,16 +260,13 @@
     @page { size:A4; margin:12mm; }
     body, .sheet { background:#fff !important; }
     #app { max-width:none; }
-    .bottom-nav, .toast, .viewer, .bk-overlay, .banner { display:none !important; }
+    .bottom-nav, .toast, .bk-overlay, .banner { display:none !important; }
     .page { padding-bottom:0 !important; min-height:0; }
-    .no-print, .rowdel, .addrow, .bottom, .savedinfo, .photo-add, .date-nav-row { display:none !important; }
+    .no-print, .rowdel, .addrow, .bottom, .savedinfo, .date-nav-row { display:none !important; }
     .print-only { display:block; }
     .sheet header { position:static !important; box-shadow:none !important; background:#fff !important; color:#000 !important; border-bottom:2px solid #000; padding:0 0 6px; }
     .sheet .wrap { padding:0; }
     .card { break-inside:avoid; border-color:#999; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-    .card.photos-card { break-inside:auto; }
-    .photo { break-inside:avoid; }
-    .photo-grid { grid-template-columns:repeat(3, minmax(0,1fr)); }
     .sheet input, .sheet select, .sheet textarea { border-color:#ccc; }
     .sheet select { appearance:none; -webkit-appearance:none; }
     .sheet textarea { display:none; }
@@ -428,17 +412,6 @@
             </table>
             <button type="button" class="addrow" data-add="phases">+ 단계 추가</button>
           </div></div>
-          </div></div>
-
-          <!-- 6. 현장 사진 -->
-          <div class="card photos-card"><div class="title">현장 사진 <span class="count" id="photoCount">0장</span></div><div class="sec">
-            <div class="photo-grid" id="photoGrid"></div>
-            <div class="photo-empty" id="photoEmpty">등록된 사진이 없습니다.</div>
-            <div class="photo-add">
-              <label class="addrow" for="photoInput">+ 사진 추가</label>
-              <input type="file" id="photoInput" accept="image/*" multiple hidden>
-            </div>
-          </div></div>
 
           <!-- 7. 작업 내용 · 특이사항 -->
           <div class="card"><div class="title">작업 내용 · 특이사항</div><div class="sec">
@@ -502,7 +475,6 @@
       <input type="radio" name="bkScope" value="all">
       <span><strong>전체 백업</strong><small>모든 기간의 제작일지를 한 파일로 저장</small></span>
     </label>
-    <label class="bk-inc"><input type="checkbox" id="bkPhotos">사진 원본 데이터도 포함 (파일이 커집니다)</label>
     <div class="bk-status" id="bkStatus" aria-live="polite"></div>
     <div class="bk-actions">
       <button type="button" class="bk-cancel" id="bkCancel">닫기</button>
@@ -511,7 +483,6 @@
   </div>
 </div>
 
-<div class="viewer" id="viewer"><img id="viewerImg" alt=""></div>
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -522,9 +493,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
 import {
   getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, where, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-import {
-  getStorage, ref as sRef, uploadBytes, getDownloadURL, deleteObject
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAZxNMz_RR0vyos7My8wYq6NLPiDk5smD8",
@@ -538,15 +506,7 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 const LOG_COLLECTION = 'production_logs';
-const PHOTO_COLLECTION = 'production_photos';   // PHOTO_BACKEND === 'firestore' 일 때 사진 저장소
 
-/* 사진 저장 방식
-   'storage'   : Firebase Storage  production-photos/날짜/ 경로 (Storage 활성화 필요 — Blaze 요금제)
-   'firestore' : Firestore 문서에 압축 이미지 저장 (Storage 없이 바로 동작, 장당 1MB 미만으로 자동 압축)
-   현재 프로젝트는 Storage 버킷이 없어 'firestore' 로 둡니다. Storage 를 켜면 'storage' 로 바꾸세요. */
-const PHOTO_BACKEND = 'firestore';
-const PHOTO_LONG_SIDE = 1600;
-const FS_PHOTO_LIMIT = 900000; // base64 문자 수 상한 (Firestore 문서 1MiB 제한 대비)
 
 /* =========================================================
    COMMON HELPERS
@@ -603,7 +563,6 @@ function blankLog(date){
     monitors: DEFAULT_MONITORS.map(use=>({ ...ROW_BLANK.monitors(), use })),
     lines: DEFAULT_LINES.map(([name, main, dir])=>({ ...ROW_BLANK.lines(), name, main, dir })),
     phases: DEFAULT_PHASES.map(phase=>({ ...ROW_BLANK.phases(), phase })),
-    photos: [],
     progress:'', issues:''
   };
 }
@@ -635,7 +594,6 @@ function staffName(staff, role){
 let selectedDate = todayKey();
 let cur = null;            // 편집 중인 일지
 let dirty = false;
-let removedPhotos = [];    // 저장 시 지울 기존 사진
 let saving = false;
 
 /* =========================================================
@@ -691,7 +649,7 @@ window.addEventListener('beforeunload', e=>{ if(dirty){ e.preventDefault(); e.re
 (function setupSwipe(){
   let sx=0, sy=0, st=0, tracking=false;
   document.addEventListener('touchstart', e=>{
-    if(e.target.closest('input, textarea, select, button, label, table, .bk-overlay, .viewer')) { tracking=false; return; }
+    if(e.target.closest('input, textarea, select, button, label, table, .bk-overlay')) { tracking=false; return; }
     const t=e.touches[0]; sx=t.clientX; sy=t.clientY; st=Date.now(); tracking=true;
   }, {passive:true});
   document.addEventListener('touchend', e=>{
@@ -849,15 +807,14 @@ $('listNew').onclick = ()=>{ openNew(); switchTab('edit', {force:true}); };
 const form = $('editForm');
 
 function openNew(){
-  cur = blankLog(selectedDate); dirty = false; removedPhotos = [];
+  cur = blankLog(selectedDate); dirty = false;
   unlive('doc'); hideBanner();
   renderEdit();
 }
 function openExisting(log){
   cur = hydrate(log);
-  dirty = false; removedPhotos = []; hideBanner();
+  dirty = false; hideBanner();
   switchTab('edit', {force:true});
-  loadPhotoData();
 }
 
 /* --- 여러 명 동시 작성: 열어 둔 일지를 다른 사람이 저장하면 알림 --- */
@@ -870,8 +827,8 @@ function showBanner(text, btnLabel, onClick){
 function hideBanner(){ $('editBanner').hidden = true; }
 function applyRemote(snap){
   cur = hydrate({ ...snap.data(), id: snap.id });
-  dirty = false; removedPhotos = []; hideBanner();
-  renderEdit(); loadPhotoData();
+  dirty = false; hideBanner();
+  renderEdit();
 }
 function watchDoc(){
   if(!cur?.id){ unlive('doc'); return; }
@@ -900,8 +857,7 @@ function hydrate(log){
     cameras: (log.cameras||[]).map(({model, position, ...r})=>({ ...ROW_BLANK.cameras(), ...r, type: r.type ?? model ?? '', director: r.director ?? position ?? '' })),
     audio:   normRows('audio', log.audio),
     lines:   (log.lines||[]).map(({route, band, ip, ...r})=>({...ROW_BLANK.lines(), ...r, method: fixMethod(r.method ?? log.txMethod), tx: r.tx ?? route ?? '', txIp: r.txIp ?? ip ?? band ?? ''})),
-    ...Object.fromEntries(['intercom','monitors','phases'].filter(k=>log[k]).map(k=>[k, normRows(k, log[k])])),
-    photos:  (log.photos||[]).map(p=>({ ...p, src: p.url || null }))
+    ...Object.fromEntries(['intercom','monitors','phases'].filter(k=>log[k]).map(k=>[k, normRows(k, log[k])]))
   };
   delete c.txMethod;
   return c;
@@ -950,7 +906,7 @@ function renderEdit(){
     el.classList.remove('invalid');
   });
   ['start','end','setup','teardown'].forEach(fillTime);
-  ['staff','cameras','audio','intercom','monitors','lines','phases'].forEach(k=>renderRows(k)); renderPhotos();
+  ['staff','cameras','audio','intercom','monitors','lines','phases'].forEach(k=>renderRows(k));
   updateHeaderState();
 }
 
@@ -1061,7 +1017,7 @@ function renderLines(){
       </div>
       <div class="lc-note">${fld('비고', inp(i,'note','placeholder="예) 저지연, 중계차 DHCP, 서버2 동시사용"'))}</div>
     </div>`;
-  }).join('') : `<div class="photo-empty">회선이 없습니다.</div>`;
+  }).join('') : `<div class="empty-note">회선이 없습니다.</div>`;
   updateCount('lines');
 }
 function renderRows(kind){
@@ -1115,8 +1071,6 @@ form.addEventListener('input', e=>{
     if(kind==='staff' && el.dataset.f==='role'){
       const dl = $('dl-sn-'+el.dataset.i); if(dl) dl.outerHTML = staffListHtml(+el.dataset.i);
     }
-  }else if(el.dataset.photo){
-    const p = cur.photos.find(x=>x.id===el.dataset.photo); if(p){ p.caption = el.value; markDirty(); }
   }
 });
 /* 추천 목록(datalist) 칸은 값이 있으면 그 값과 맞는 항목만 보여서 다른 걸 못 고름 →
@@ -1136,102 +1090,6 @@ form.addEventListener('focusout', e=>{
   delete el.dataset.prev; delete el.dataset.ph; delete el.dataset.edited;
 });
 form.addEventListener('change', e=>{ if(e.target.type==='checkbox' && e.target.dataset.k){ setPath(cur, e.target.dataset.k, e.target.checked); markDirty(); } });
-
-/* =========================================================
-   PHOTOS
-   ========================================================= */
-function renderPhotos(){
-  const g = $('photoGrid');
-  g.innerHTML = cur.photos.map(p=>`
-    <div class="photo">
-      ${p.src ? `<img class="thumb" src="${esc(p.src)}" data-view="${esc(p.id)}" alt="">` : `<div class="thumb loading">${p.error ? '불러오기 실패' : '불러오는 중…'}</div>`}
-      ${p.pending ? '<span class="badge">저장 전</span>' : ''}
-      <button type="button" class="rowdel" data-delphoto="${esc(p.id)}" aria-label="사진 삭제">✕</button>
-      <input data-photo="${esc(p.id)}" value="${esc(p.caption)}" placeholder="사진 설명">
-    </div>`).join('');
-  $('photoEmpty').style.display = cur.photos.length ? 'none' : '';
-  $('photoCount').textContent = `${cur.photos.length}장`;
-}
-$('photoGrid').addEventListener('click', e=>{
-  const d = e.target.closest('[data-delphoto]');
-  if(d){
-    if(!confirm('이 사진을 삭제할까요? (저장해야 반영됩니다)')) return;
-    const idx = cur.photos.findIndex(p=>p.id===d.dataset.delphoto);
-    const [p] = cur.photos.splice(idx, 1);
-    if(!p.pending) removedPhotos.push(p);
-    renderPhotos(); markDirty(); return;
-  }
-  const v = e.target.closest('[data-view]');
-  if(v){ $('viewerImg').src = v.src; $('viewer').classList.add('open'); }
-});
-$('viewer').onclick = ()=> $('viewer').classList.remove('open');
-
-async function loadPhotoData(){
-  const target = cur;
-  const need = target.photos.filter(p=>!p.src && p.kind==='firestore');
-  await Promise.all(need.map(async p=>{
-    try{
-      const s = await getDoc(doc(db, PHOTO_COLLECTION, p.id));
-      if(s.exists()) p.src = s.data().data; else p.error = true;
-    }catch(e){ p.error = true; }
-  }));
-  if(cur === target && currentTab==='edit') renderPhotos();
-}
-
-function loadImage(file){
-  return new Promise((res, rej)=>{
-    const url = URL.createObjectURL(file), img = new Image();
-    img.onload = ()=>{ URL.revokeObjectURL(url); res(img); };
-    img.onerror = ()=>{ URL.revokeObjectURL(url); rej(new Error('이미지를 읽을 수 없습니다')); };
-    img.src = url;
-  });
-}
-/* 긴 변 1600px 로 줄여 JPEG 로 변환. firestore 저장 방식이면 문서 한도 아래로 들어올 때까지 품질/크기를 더 낮춤 */
-async function compressImage(file){
-  const img = await loadImage(file);
-  const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
-  let side = PHOTO_LONG_SIDE, q = 0.85, out = '';
-  for(let i=0; i<10; i++){
-    const scale = Math.min(1, side / Math.max(img.naturalWidth, img.naturalHeight));
-    canvas.width = Math.round(img.naturalWidth*scale); canvas.height = Math.round(img.naturalHeight*scale);
-    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    out = canvas.toDataURL('image/jpeg', q);
-    if(PHOTO_BACKEND !== 'firestore' || out.length < FS_PHOTO_LIMIT) break;
-    if(q > 0.6) q -= 0.1; else side = Math.round(side * 0.8);
-  }
-  return out;
-}
-$('photoInput').addEventListener('change', async e=>{
-  const files = [...e.target.files]; e.target.value = '';
-  if(!files.length) return;
-  toast(`사진 ${files.length}장 처리 중…`);
-  for(const f of files){
-    try{
-      const src = await compressImage(f);
-      cur.photos.push({ id: uid(), caption:'', src, pending:true, kind: PHOTO_BACKEND });
-    }catch(err){ toast(`${f.name}: ${err.message}`, true); }
-  }
-  renderPhotos(); markDirty();
-});
-
-async function uploadPhoto(p, logId, date){
-  if(PHOTO_BACKEND === 'storage'){
-    const path = `production-photos/${date}/${logId}_${p.id}.jpg`;
-    const blob = await (await fetch(p.src)).blob();
-    const r = sRef(getStorage(fbApp), path);
-    await uploadBytes(r, blob, { contentType:'image/jpeg' });
-    return { id:p.id, caption:p.caption||'', kind:'storage', path, url: await getDownloadURL(r) };
-  }
-  await setDoc(doc(db, PHOTO_COLLECTION, p.id), { logId, date, data:p.src, createdAt: Date.now() });
-  return { id:p.id, caption:p.caption||'', kind:'firestore' };
-}
-async function removePhoto(p){
-  try{
-    if(p.kind==='storage' && p.path) await deleteObject(sRef(getStorage(fbApp), p.path));
-    else if(p.kind==='firestore') await deleteDoc(doc(db, PHOTO_COLLECTION, p.id));
-  }catch(e){ console.warn('사진 삭제 실패', e); }
-}
 
 /* =========================================================
    SAVE / PRINT / DELETE
@@ -1268,31 +1126,14 @@ $('saveBtn').onclick = async ()=>{
       }
     }
     const id = cur.id || doc(collection(db, LOG_COLLECTION)).id;
-    const pendingCount = cur.photos.filter(p=>p.pending).length;
-    let done = 0;
-    const photos = [];
-    for(const p of cur.photos){
-      if(p.pending){
-        setBusy(true, `사진 ${++done}/${pendingCount}…`);
-        const meta = await uploadPhoto(p, id, cur.date);
-        photos.push(meta);
-        Object.assign(p, meta, { pending:false, src: meta.url || p.src });
-      }else{
-        const { src, error, pending, ...meta } = p;
-        photos.push({ ...meta, caption: p.caption||'' });
-      }
-    }
-    setBusy(true);
     const now = Date.now();
-    const { id:_i, photos:_p, ...rest } = cur;
-    const payload = JSON.parse(JSON.stringify({ ...rest, photos,
+    const { id:_i, ...rest } = cur;
+    const payload = JSON.parse(JSON.stringify({ ...rest,
       createdAt: cur.createdAt || now, createdBy: cur.createdBy || me, updatedAt: now, updatedBy: me }));
     await setDoc(doc(db, LOG_COLLECTION, id), payload);
-    for(const p of removedPhotos) await removePhoto(p);
-    removedPhotos = [];
     Object.assign(cur, { id, createdAt: payload.createdAt, createdBy: payload.createdBy, updatedAt: now, updatedBy: me });
     selectedDate = cur.date; calState.cursor = parseKey(cur.date);
-    rememberNames(); renderStaffLists(); renderPhotos();
+    rememberNames(); renderStaffLists();
     dirty = false; hideBanner(); updateHeaderState(); watchDoc();
     toast('저장되었습니다');
   }catch(e){
@@ -1316,11 +1157,10 @@ $('deleteBtn').onclick = async ()=>{
     if(dirty && !confirm('작성 중인 내용을 버릴까요?')) return;
     dirty = false; cur = null; switchTab('list', {force:true}); return;
   }
-  if(!confirm(`'${cur.title || '제목 없음'}' 제작일지를 삭제할까요?\n사진도 함께 삭제되며 되돌릴 수 없습니다.`)) return;
+  if(!confirm(`'${cur.title || '제목 없음'}' 제작일지를 삭제할까요?\n되돌릴 수 없습니다.`)) return;
   setBusy(true, '삭제 중…');
   try{
     await deleteDoc(doc(db, LOG_COLLECTION, cur.id));
-    for(const p of [...cur.photos.filter(p=>!p.pending), ...removedPhotos]) await removePhoto(p);
     toast('삭제되었습니다');
     dirty = false; cur = null;
     switchTab('list', {force:true});
@@ -1347,7 +1187,6 @@ document.querySelectorAll('input[name="bkScope"]').forEach(r=> r.onchange = ()=>
 });
 $('bkRun').onclick = async ()=>{
   const scope = document.querySelector('input[name="bkScope"]:checked').value;
-  const withPhotos = $('bkPhotos').checked;
   const st = $('bkStatus'); st.classList.remove('err'); st.textContent = '불러오는 중…';
   $('bkRun').disabled = true;
   try{
@@ -1360,14 +1199,6 @@ $('bkRun').onclick = async ()=>{
     }
     const snap = await getDocs(q);
     const logs = snap.docs.map(d=>({ id:d.id, ...d.data() })).sort((a,b)=> (a.date+(a.start||'')).localeCompare(b.date+(b.start||'')));
-    if(withPhotos){
-      let i = 0; const all = logs.flatMap(l=> (l.photos||[]).filter(p=>p.kind==='firestore'));
-      for(const l of logs) for(const p of (l.photos||[])){
-        if(p.kind!=='firestore') continue;
-        st.textContent = `사진 ${++i}/${all.length} 불러오는 중…`;
-        try{ const s = await getDoc(doc(db, PHOTO_COLLECTION, p.id)); if(s.exists()) p.data = s.data().data; }catch(e){}
-      }
-    }
     const out = { app:'기술국 제작일지', scope: label, exportedAt: new Date().toISOString(), count: logs.length, logs };
     const blob = new Blob([JSON.stringify(out, null, 2)], { type:'application/json' });
     const a = document.createElement('a');
