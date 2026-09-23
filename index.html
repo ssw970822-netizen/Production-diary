@@ -250,6 +250,21 @@
   .bk-run { background:var(--navy); border:1px solid var(--navy); color:#fff; }
   .bk-run:disabled { opacity:0.5; cursor:not-allowed; }
 
+  /* 맨 아래로 / 맨 위로 이동 버튼 */
+  .jump {
+    position:fixed; right:calc(50% - 280px + 14px); bottom:calc(104px + env(safe-area-inset-bottom)); z-index:60;
+    width:44px; height:44px; border-radius:50%; border:1px solid #cbd4dc; padding:0;
+    background:#ffffffee; color:var(--navy); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 3px 10px rgba(20,30,40,.18);
+    opacity:0; pointer-events:none; transition:opacity .18s;
+  }
+  .jump svg { width:20px; height:20px; display:block; transition:transform .18s; }
+  .jump.up svg { transform:rotate(180deg); }
+  .jump.show { opacity:1; pointer-events:auto; }
+  .jump:active { background:#eef2f5; }
+  @media (max-width:600px) { .jump { right:14px; } }
+
   /* 추천 목록 (휴대폰에서 datalist 가 안 떠서 직접 만든 것) */
   .sugg { position:fixed; z-index:140; background:#fff; border:1px solid #b8c3cc; border-radius:8px; box-shadow:0 8px 24px rgba(20,30,40,.20); max-height:44vh; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
   .sugg button { display:block; width:100%; text-align:left; border:0; border-bottom:1px solid #eef1f4; background:none; padding:12px; font-family:inherit; font-size:14px; color:var(--text); cursor:pointer; }
@@ -267,7 +282,7 @@
     @page { size:A4; margin:12mm; }
     body, .sheet { background:#fff !important; }
     #app { max-width:none; }
-    .bottom-nav, .toast, .bk-overlay, .banner, .sugg { display:none !important; }
+    .bottom-nav, .toast, .bk-overlay, .banner, .sugg, .jump { display:none !important; }
     .page { padding-bottom:0 !important; min-height:0; }
     .no-print, .rowdel, .addrow, .bottom, .savedinfo, .date-nav-row { display:none !important; }
     .print-only { display:block; }
@@ -491,6 +506,7 @@
   </div>
 </div>
 
+<button type="button" class="jump" id="jumpBtn" aria-label="맨 아래로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 12 16 19 9"></polyline></svg></button>
 <div class="sugg" id="sugg" hidden></div>
 <div class="toast" id="toast"></div>
 
@@ -653,6 +669,25 @@ function switchTab(tab, {force=false}={}){
   else if(tab==='edit'){ if(!cur) openNew(); else { renderEdit(); watchDoc(); } }
 }
 document.querySelectorAll('.nav-btn').forEach(b=> b.addEventListener('click', ()=> switchTab(b.dataset.tab)));
+
+/* 긴 화면에서 한 번에 끝으로 — 아래에 닿으면 '맨 위로' 로 바뀐다 */
+const jumpBtn = $('jumpBtn');
+let atBottom = false;
+function updateJump(){
+  const doc = document.documentElement;
+  const room = doc.scrollHeight - window.innerHeight;
+  jumpBtn.classList.toggle('show', room > 400);
+  atBottom = window.scrollY > room - 80;
+  jumpBtn.classList.toggle('up', atBottom);
+  jumpBtn.setAttribute('aria-label', atBottom ? '맨 위로' : '맨 아래로');
+}
+jumpBtn.onclick = ()=> window.scrollTo({
+  top: atBottom ? 0 : document.documentElement.scrollHeight,
+  behavior: 'smooth'
+});
+window.addEventListener('scroll', updateJump, { passive:true });
+window.addEventListener('resize', updateJump);
+new ResizeObserver(updateJump).observe(document.body);
 window.addEventListener('beforeunload', e=>{ if(dirty){ e.preventDefault(); e.returnValue=''; } });
 
 (function setupSwipe(){
