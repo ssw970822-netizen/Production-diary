@@ -147,6 +147,7 @@
   /* 카메라: 번호 옆 2줄(비고) 묶음 */
   .sheet tr.grp-top td { border-top:2px solid #8a99a6; }
   .sheet td input.extra { text-align:left; font-size:12px; }
+  .extra-row { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:4px; }
   /* 체크리스트 */
   /* 전송망 카드 */
   .lcard { border:1px solid #aeb8c1; border-radius:8px; padding:8px; margin-bottom:8px; background:#fff; break-inside:avoid; }
@@ -326,7 +327,7 @@
             <div class="grid" style="margin-top:8px">
               <div class="field full"><div class="label">장소</div><input data-k="place" placeholder="예) 공개홀, 시청 앞 광장"></div>
               <div class="field"><div class="label">제작 구분</div>
-                <select data-k="category"><option value="">선택</option><option>스튜디오</option><option>이동보도국</option><option>현장중계</option><option>녹화</option><option>ENG</option><option>라디오</option><option>행사</option><option>기타</option></select>
+                <select data-k="category"><option value="">선택</option><option>스튜디오</option><option>이동보도국</option><option>현장중계</option><option>ENG</option><option>라디오</option><option>행사</option><option>기타</option></select>
               </div>
               <div class="field"><div class="label">제작 형태</div>
                 <select data-k="form"><option value="">선택</option><option>생방송</option><option>녹화</option></select>
@@ -351,7 +352,7 @@
           <div class="card"><div class="title">카메라 구성 <span class="count" id="camCount">총 0대</span></div><div class="sec">
             <table>
               <colgroup><col style="width:17%"><col style="width:25%"><col><col style="width:26%"><col class="col-x"></colgroup>
-              <thead><tr><th>번호</th><th>종류</th><th>감독명</th><th>렌즈 · 지지</th><th class="col-x"></th></tr></thead>
+              <thead><tr><th>번호</th><th>종류</th><th>감독명</th><th>거치 방식</th><th class="col-x"></th></tr></thead>
               <tbody id="camBody"></tbody>
             </table>
             <button type="button" class="addrow" data-add="cameras">+ 카메라 추가</button>
@@ -428,7 +429,8 @@
         <div class="savedinfo" id="savedInfo"></div>
 
         <datalist id="dl-camtype"><option value="ENG"><option value="EFP"><option value="DSLR"><option value="지미집"><option value="스테디캠"><option value="PTZ"><option value="드론"><option value="액션캠"></datalist>
-        <datalist id="dl-support"><option value="삼각대"><option value="페데스탈"><option value="숄더"><option value="핸드헬드"><option value="짐벌"></datalist>
+        <datalist id="dl-support"><option value="삼각대"><option value="페데스탈"><option value="지미집"><option value="숄더"><option value="핸드헬드"><option value="짐벌"></datalist>
+        <datalist id="dl-lens"><option value="박스렌즈"><option value="망원"><option value="표준"><option value="광각"><option value="어안"></datalist>
         <datalist id="dl-roles"></datalist>
         <datalist id="dl-camdir"></datalist>
         <datalist id="dl-wire"><option value="무선"><option value="유선"></datalist>
@@ -568,7 +570,7 @@ function blankLog(date){
 }
 const ROW_BLANK = {
   staff:    ()=>({ role:'', name:'' }),
-  cameras:  ()=>({ type:'', director:'', support:'', note:'' }),
+  cameras:  ()=>({ type:'', director:'', support:'', lens:'', note:'' }),
   audio:    ()=>({ channel:'', mic:'', wire:'' }),
   intercom: ()=>({ user:'', gear:'', wire:'' }),
   monitors: ()=>({ use:'', gear:'', source:'' }),
@@ -954,7 +956,7 @@ const ROW_DEF = {
   cameras:  { body:'camBody', count:'camCount', unit:n=>`총 ${n}대`,
     no: i=>`CAM${i+1}`,
     cells: [ ['type','dl-camtype'], ['director','dl-camdir'], ['support','dl-support'] ],
-    extra: ['note','부착 장비 · 비고 (예: 프롬프터, LTE 라우터)'] },
+    extra: [ ['lens','dl-lens','렌즈 (예: 22배 박스렌즈)'], ['note','','부착 장비 · 비고 (예: 프롬프터)'] ] },
   audio:    { body:'audBody', count:'audCount', unit:n=>`총 ${n}ch`,
     no: i=>`${i+1}`,
     cells: [ ['channel',''], ['mic',''], ['wire','dl-wire'] ] },
@@ -1035,7 +1037,8 @@ function renderRows(kind){
       ${def.cells.map((c, ci)=>cell(r, i, c, ci)).join('')}
       <td class="col-x"${span}><button type="button" class="rowdel" data-del="${kind}" data-i="${i}" aria-label="행 삭제">✕</button></td>
     </tr>${def.extra ? `
-    <tr><td colspan="${def.cells.length}"><input class="extra" data-row="${kind}" data-i="${i}" data-f="${def.extra[0]}" placeholder="${def.extra[1]}" value="${esc(r[def.extra[0]])}"></td></tr>` : ''}`).join('')
+    <tr><td colspan="${def.cells.length}"><div class="extra-row">${def.extra.map(([f, list, ph])=>
+      `<input class="extra" data-row="${kind}" data-i="${i}" data-f="${f}"${list ? ` list="${list}"` : ''} placeholder="${ph}" value="${esc(r[f])}">`).join('')}</div></td></tr>` : ''}`).join('')
     : `<tr><td colspan="${cols}" style="color:#8b98a3;font-size:12px;padding:10px">항목이 없습니다</td></tr>`;
   updateCount(kind);
   if(kind==='staff') renderStaffLists();
