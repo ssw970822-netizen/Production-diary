@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>기술국 제작일지</title>
 <meta name="theme-color" content="#314d68">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -34,7 +34,10 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
     -webkit-tap-highlight-color: transparent;
   }
-  #app { max-width: 560px; width:100%; margin: 0 auto; min-height: 100vh; min-height: 100dvh; position:relative; overflow-x:hidden; }
+  /* overflow-x 는 clip 이어야 한다 — hidden 으로 두면 안쪽 position:sticky 가 먹지 않는다 */
+  #app { max-width: 560px; width:100%; margin: 0 auto; min-height: 100vh; min-height: 100dvh; position:relative;
+         overflow-x:hidden;   /* clip 을 모르는 옛 브라우저용 */
+         overflow-x:clip; }
   .page { display:block; padding-bottom: calc(96px + env(safe-area-inset-bottom)); min-height: 100dvh; }
   .page.hidden { display:none !important; }
 
@@ -122,6 +125,25 @@
   .card .title { background:#e7edf2; padding:9px 11px; font-weight:bold; color:#29445b; border-bottom:1px solid #adb9c3; display:flex; align-items:center; justify-content:space-between; gap:8px; }
   .card .title .count { font-size:12px; font-weight:700; color:var(--navy); background:#fff; border:1px solid #b8c3cc; border-radius:20px; padding:2px 9px; }
   .card .sec { padding:9px; }
+
+  /* 카드 접기 — 제목을 누르면 내용이 접힌다 */
+  .card .title { cursor:pointer; user-select:none; }
+  .card .title::after { content:''; width:8px; height:8px; flex:0 0 8px; margin-left:2px;
+    border-right:2px solid #6f8497; border-bottom:2px solid #6f8497;
+    transform:rotate(45deg) translate(-2px,-2px); transition:transform .18s; }
+  .card.folded .title::after { transform:rotate(-135deg) translate(-2px,-2px); }
+  .card.folded .title { border-bottom:0; }
+  .card.folded .sec { display:none; }
+  .card .title .count { margin-left:auto; }
+
+  /* 칸 이동 바 */
+  .secnav { position:sticky; top:var(--hh, 52px); z-index:45; display:flex; gap:5px; overflow-x:auto;
+    padding:7px 0; margin:0 0 2px; background:var(--bg); scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  .secnav::-webkit-scrollbar { display:none; }
+  .secnav { cursor:grab; }
+  .secnav button { flex:0 0 auto; border:1px solid #c3ced8; background:#fff; color:#3d4e5c;
+    border-radius:16px; padding:6px 11px; font-size:12.5px; font-weight:700; font-family:inherit; cursor:pointer; white-space:nowrap; }
+  .secnav button.on { background:var(--navy); border-color:var(--navy); color:#fff; }
 
   .grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
   .grid > * { min-width:0; }
@@ -282,12 +304,13 @@
     @page { size:A4; margin:12mm; }
     body, .sheet { background:#fff !important; }
     #app { max-width:none; }
-    .bottom-nav, .toast, .bk-overlay, .banner, .sugg, .jump { display:none !important; }
+    .bottom-nav, .toast, .bk-overlay, .banner, .sugg, .jump, .secnav { display:none !important; }
     .page { padding-bottom:0 !important; min-height:0; }
     .no-print, .rowdel, .addrow, .bottom, .savedinfo, .date-nav-row { display:none !important; }
     .print-only { display:block; }
     .sheet header { position:static !important; box-shadow:none !important; background:#fff !important; color:#000 !important; border-bottom:2px solid #000; padding:0 0 6px; }
     .sheet .wrap { padding:0; }
+    .card.folded .sec { display:block !important; }
     .card { break-inside:avoid; border-color:#999; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .sheet input, .sheet select, .sheet textarea { border-color:#ccc; }
     .sheet select { appearance:none; -webkit-appearance:none; }
@@ -333,10 +356,11 @@
       <header><h1>제작일지</h1><span class="hsub" id="editState"></span></header>
       <div class="banner" id="editBanner" hidden><span id="bannerText"></span><button type="button" id="bannerBtn"></button></div>
       <div class="wrap">
+        <nav class="secnav" id="secNav"></nav>
         <form id="editForm" autocomplete="off" onsubmit="return false">
 
           <!-- 1. 기본 정보 -->
-          <div class="card"><div class="title">기본 정보</div><div class="sec">
+          <div class="card" id="sec-basic"><div class="title" data-sec="basic">기본 정보</div><div class="sec">
             <div class="grid">
               <div class="field full"><div class="label">프로그램 제목 <span class="req">*</span></div><input data-k="title" placeholder="예) 춘천 시민의 날 특집 생방송"></div>
             </div>
@@ -360,7 +384,7 @@
           </div></div>
 
           <!-- 2. 인력 -->
-          <div class="card"><div class="title">인력 <span class="count" id="staffCount">총 0명</span></div><div class="sec">
+          <div class="card" id="sec-staff"><div class="title" data-sec="staff">인력 <span class="count" id="staffCount">총 0명</span></div><div class="sec">
             <table class="staff-table">
               <colgroup><col style="width:34%"><col><col class="col-x"></colgroup>
               <thead><tr><th>구분</th><th>담당자</th><th class="col-x"></th></tr></thead>
@@ -370,7 +394,7 @@
           </div></div>
 
           <!-- 3. 카메라 구성 -->
-          <div class="card"><div class="title">카메라 구성 <span class="count" id="camCount">총 0대</span></div><div class="sec">
+          <div class="card" id="sec-cam"><div class="title" data-sec="cam">카메라 구성 <span class="count" id="camCount">총 0대</span></div><div class="sec">
             <table>
               <colgroup><col style="width:17%"><col style="width:25%"><col><col style="width:26%"><col class="col-x"></colgroup>
               <thead><tr><th>번호</th><th>종류</th><th>감독명</th><th>거치 방식</th><th class="col-x"></th></tr></thead>
@@ -384,7 +408,7 @@
           </div></div>
 
           <!-- 4. 오디오 구성 -->
-          <div class="card"><div class="title">오디오 구성 <span class="count" id="audCount">총 0ch</span></div><div class="sec">
+          <div class="card" id="sec-aud"><div class="title" data-sec="aud">오디오 구성 <span class="count" id="audCount">총 0ch</span></div><div class="sec">
             <table>
               <colgroup><col style="width:12%"><col><col style="width:28%"><col style="width:22%"><col class="col-x"></colgroup>
               <thead><tr><th>번호</th><th>채널 / 용도</th><th>마이크 기종</th><th>무선·유선</th><th class="col-x"></th></tr></thead>
@@ -399,8 +423,24 @@
           </div></div>
 
           <!-- 5. 전송망 구성 -->
+          <div class="card" id="sec-net"><div class="title" data-sec="net">전송망 구성 <span class="count" id="lineCount">총 0회선</span></div><div class="sec">
+            <div id="lineBody"></div>
+            <button type="button" class="addrow" data-add="lines">+ 회선 추가</button>
+          </div></div>
+
+          <!-- 단계별 리턴 운용 -->
+          <div class="card" id="sec-ret"><div class="title" data-sec="ret">단계별 리턴 운용</div><div class="sec">
+            <table>
+              <colgroup><col style="width:26%"><col><col><col class="col-x"></colgroup>
+              <thead><tr><th>단계</th><th>비디오</th><th>오디오</th><th class="col-x"></th></tr></thead>
+              <tbody id="phaseBody"></tbody>
+            </table>
+            <button type="button" class="addrow" data-add="phases">+ 단계 추가</button>
+          </div></div>
+
+
           <!-- 인터컴 -->
-          <div class="card"><div class="title">인터컴 <span class="count" id="icomCount">총 0</span></div><div class="sec">
+          <div class="card" id="sec-icom"><div class="title" data-sec="icom">인터컴 <span class="count" id="icomCount">총 0</span></div><div class="sec">
             <table>
               <colgroup><col style="width:26%"><col><col style="width:22%"><col class="col-x"></colgroup>
               <thead><tr><th>사용자</th><th>장비</th><th>무선·유선</th><th class="col-x"></th></tr></thead>
@@ -410,7 +450,7 @@
           </div></div>
 
           <!-- 모니터 -->
-          <div class="card"><div class="title">모니터 <span class="count" id="monCount">총 0</span></div><div class="sec">
+          <div class="card" id="sec-mon"><div class="title" data-sec="mon">모니터 <span class="count" id="monCount">총 0</span></div><div class="sec">
             <table>
               <colgroup><col style="width:34%"><col><col style="width:26%"><col class="col-x"></colgroup>
               <thead><tr><th>용도</th><th>장비</th><th>소스</th><th class="col-x"></th></tr></thead>
@@ -419,24 +459,8 @@
             <button type="button" class="addrow" data-add="monitors">+ 모니터 추가</button>
           </div></div>
 
-          <!-- 5. 전송망 구성 -->
-          <div class="card"><div class="title">전송망 구성 <span class="count" id="lineCount">총 0회선</span></div><div class="sec">
-            <div id="lineBody"></div>
-            <button type="button" class="addrow" data-add="lines">+ 회선 추가</button>
-          </div></div>
-
-          <!-- 단계별 리턴 운용 -->
-          <div class="card"><div class="title">단계별 리턴 운용</div><div class="sec">
-            <table>
-              <colgroup><col style="width:26%"><col><col><col class="col-x"></colgroup>
-              <thead><tr><th>단계</th><th>비디오</th><th>오디오</th><th class="col-x"></th></tr></thead>
-              <tbody id="phaseBody"></tbody>
-            </table>
-            <button type="button" class="addrow" data-add="phases">+ 단계 추가</button>
-          </div></div>
-
           <!-- 7. 작업 내용 · 특이사항 -->
-          <div class="card"><div class="title">작업 내용 · 특이사항</div><div class="sec">
+          <div class="card" id="sec-memo"><div class="title" data-sec="memo">작업 내용 · 특이사항</div><div class="sec">
             <div class="field"><div class="label">진행 경과</div><textarea data-k="progress" placeholder="셋업 → 리허설 → 본방송 → 철수 순으로 진행 경과를 입력하세요"></textarea><div class="print-only print-text" data-print="progress"></div></div>
             <div class="field" style="margin-top:8px"><div class="label">특이사항 · 장애</div><textarea data-k="issues" placeholder="장애 내용, 조치사항, 다음 제작 시 참고할 점"></textarea><div class="print-only print-text" data-print="issues"></div></div>
           </div></div>
@@ -666,9 +690,93 @@ function switchTab(tab, {force=false}={}){
   window.scrollTo(0,0);
   if(tab==='calendar') renderCalendar();
   else if(tab==='list') renderList();
-  else if(tab==='edit'){ if(!cur) openNew(); else { renderEdit(); watchDoc(); } }
+  else if(tab==='edit'){
+    if(!cur) openNew(); else { renderEdit(); watchDoc(); }
+    syncHeaderVar(); updateSecNav();
+  }
 }
 document.querySelectorAll('.nav-btn').forEach(b=> b.addEventListener('click', ()=> switchTab(b.dataset.tab)));
+
+/* =========================================================
+   칸 이동 바 + 카드 접기
+   ========================================================= */
+const SECTIONS = [
+  ['basic','기본'], ['staff','인력'], ['cam','카메라'], ['aud','오디오'],
+  ['net','전송망'], ['ret','리턴'], ['icom','인터컴'], ['mon','모니터'], ['memo','특이사항']
+];
+const secNav = $('secNav');
+secNav.innerHTML = SECTIONS.map(([id,label])=>`<button type="button" data-go="${id}">${label}</button>`).join('');
+
+/* 헤더에 가리지 않게 — 헤더 높이를 재서 이동 바 위치와 스크롤 여백에 쓴다 */
+function headerH(){ return document.querySelector('#page-edit header')?.offsetHeight || 52; }
+function syncHeaderVar(){ document.documentElement.style.setProperty('--hh', headerH() + 'px'); }
+
+/* 이동 바를 좌우로 끌어서 움직이기 (마우스용 — 손가락은 브라우저가 알아서 처리) */
+let navDrag = null, navMoved = false;
+secNav.addEventListener('pointerdown', e=>{
+  if(e.pointerType !== 'mouse') return;
+  navDrag = { x:e.clientX, left:secNav.scrollLeft }; navMoved = false;
+});
+secNav.addEventListener('pointermove', e=>{
+  if(!navDrag) return;
+  const dx = e.clientX - navDrag.x;
+  if(Math.abs(dx) > 4) navMoved = true;
+  if(navMoved){ secNav.scrollLeft = navDrag.left - dx; e.preventDefault(); }
+});
+window.addEventListener('pointerup', ()=>{ navDrag = null; });
+/* 트랙패드 좌우 스크롤 — 위아래(deltaY)는 건드리지 않아야 페이지가 정상으로 움직인다 */
+secNav.addEventListener('wheel', e=>{
+  if(!e.deltaX) return;
+  const max = secNav.scrollWidth - secNav.clientWidth;
+  const next = secNav.scrollLeft + e.deltaX;
+  if(max > 0 && next >= 0 && next <= max){ secNav.scrollLeft = next; e.preventDefault(); }
+}, { passive:false });
+
+secNav.addEventListener('click', e=>{
+  if(navMoved){ navMoved = false; return; }   // 끌어서 움직인 것이면 이동하지 않음
+  const b = e.target.closest('[data-go]'); if(!b) return;
+  const card = $('sec-' + b.dataset.go); if(!card) return;
+  card.classList.remove('folded'); saveFolded();
+  const y = card.getBoundingClientRect().top + window.scrollY - headerH() - secNav.offsetHeight - 6;
+  window.scrollTo({ top: Math.max(0, y), behavior:'smooth' });
+});
+
+/* 제목을 누르면 접힘 — 기기에 기억해 둬서 다음에 열 때도 유지된다 */
+function saveFolded(){
+  lsSet('pd_folded', SECTIONS.map(([id])=>id).filter(id=> $('sec-'+id)?.classList.contains('folded')));
+}
+function applyFolded(){
+  const folded = new Set(lsGet('pd_folded', []));
+  for(const [id] of SECTIONS) $('sec-'+id)?.classList.toggle('folded', folded.has(id));
+}
+$('page-edit').addEventListener('click', e=>{
+  const t = e.target.closest('.title[data-sec]'); if(!t) return;
+  t.closest('.card').classList.toggle('folded');
+  saveFolded(); updateSecNav();
+});
+
+/* 지금 보고 있는 칸을 이동 바에 표시 */
+function updateSecNav(){
+  const line = headerH() + secNav.offsetHeight + 12;
+  let active = SECTIONS[0][0];
+  for(const [id] of SECTIONS){
+    const c = $('sec-'+id); if(!c) continue;
+    if(c.getBoundingClientRect().top <= line) active = id;
+  }
+  /* 맨 아래 칸은 짧아서 판정선을 못 넘는 경우가 있다 → 바닥에 닿으면 마지막 칸으로 */
+  const doc = document.documentElement;
+  if(window.scrollY >= doc.scrollHeight - window.innerHeight - 4) active = SECTIONS[SECTIONS.length-1][0];
+  secNav.querySelectorAll('[data-go]').forEach(b=>{
+    const on = b.dataset.go === active;
+    b.classList.toggle('on', on);
+    /* 이동 바만 좌우로 움직인다 — scrollIntoView 를 쓰면 페이지 스크롤까지 끌려온다 */
+    if(on){
+      const l = b.offsetLeft, r = l + b.offsetWidth;
+      if(l < secNav.scrollLeft) secNav.scrollLeft = l - 8;
+      else if(r > secNav.scrollLeft + secNav.clientWidth) secNav.scrollLeft = r - secNav.clientWidth + 8;
+    }
+  });
+}
 
 /* 긴 화면에서 한 번에 끝으로 — 아래에 닿으면 '맨 위로' 로 바뀐다 */
 const jumpBtn = $('jumpBtn');
@@ -685,15 +793,16 @@ jumpBtn.onclick = ()=> window.scrollTo({
   top: atBottom ? 0 : document.documentElement.scrollHeight,
   behavior: 'smooth'
 });
-window.addEventListener('scroll', updateJump, { passive:true });
-window.addEventListener('resize', updateJump);
+window.addEventListener('scroll', ()=>{ updateJump(); if(currentTab==='edit') updateSecNav(); }, { passive:true });
+window.addEventListener('resize', ()=>{ updateJump(); syncHeaderVar(); });
 new ResizeObserver(updateJump).observe(document.body);
+syncHeaderVar(); applyFolded();
 window.addEventListener('beforeunload', e=>{ if(dirty){ e.preventDefault(); e.returnValue=''; } });
 
 (function setupSwipe(){
   let sx=0, sy=0, st=0, tracking=false;
   document.addEventListener('touchstart', e=>{
-    if(e.target.closest('input, textarea, select, button, label, table, .bk-overlay, .sugg')) { tracking=false; return; }
+    if(e.target.closest('input, textarea, select, button, label, table, .bk-overlay, .sugg, .secnav')) { tracking=false; return; }
     const t=e.touches[0]; sx=t.clientX; sy=t.clientY; st=Date.now(); tracking=true;
   }, {passive:true});
   document.addEventListener('touchend', e=>{
@@ -1181,6 +1290,20 @@ function setBusy(b, label){
   $('saveBtn').textContent = b ? (label||'저장 중…') : '저장';
 }
 
+/* 미리 깔려 있는 빈 줄이 그대로 저장돼 인쇄물에 남는 걸 막는다.
+   '구분' 같은 기본 라벨만 있고 실제 입력이 없는 줄도 빈 줄로 본다. */
+const ROW_LABEL_ONLY = { staff:['role'], intercom:['user','gear'], monitors:['use'], lines:['name','main','dir'], phases:['phase'] };
+function dropEmptyRows(data){
+  const out = {};
+  for(const kind of ['staff','cameras','audio','intercom','monitors','lines','phases']){
+    if(!Array.isArray(data[kind])) continue;
+    const skip = ROW_LABEL_ONLY[kind] || [];
+    out[kind] = data[kind].filter(r=>
+      Object.entries(r).some(([k,v])=> !skip.includes(k) && typeof v === 'string' && v.trim() !== ''));
+  }
+  return out;
+}
+
 $('saveBtn').onclick = async ()=>{
   if(saving) return;
   const titleEl = form.querySelector('[data-k="title"]');
@@ -1209,7 +1332,7 @@ $('saveBtn').onclick = async ()=>{
     const id = cur.id || doc(collection(db, LOG_COLLECTION)).id;
     const now = Date.now();
     const { id:_i, ...rest } = cur;
-    const payload = JSON.parse(JSON.stringify({ ...rest,
+    const payload = JSON.parse(JSON.stringify({ ...rest, ...dropEmptyRows(rest),
       createdAt: cur.createdAt || now, createdBy: cur.createdBy || me, updatedAt: now, updatedBy: me }));
     await setDoc(doc(db, LOG_COLLECTION, id), payload);
     Object.assign(cur, { id, createdAt: payload.createdAt, createdBy: payload.createdBy, updatedAt: now, updatedBy: me });
