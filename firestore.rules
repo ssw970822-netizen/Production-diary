@@ -1,50 +1,18 @@
 rules_version = '2';
 
-/* work-dairy-48ffb 프로젝트는 두 개의 앱이 함께 씁니다.
-     - 기술국 현업일지 (GitHub Pages) : tv_logs, radio_logs
-     - 제작일지                        : production_logs, production_photos
-   로그인 없이 주소를 아는 사람이면 누구나 읽고 쓸 수 있게 열되,
-   위 네 컬렉션만 열고 그 밖의 경로는 모두 막습니다. */
+/* work-dairy-48ffb 프로젝트는 두 앱이 함께 씁니다.
+     기술국 현업일지 (engjlkim-coder.github.io/Work-diary)  : tv_logs, radio_logs
+     기술국 제작일지 (ssw970822-netizen.github.io/Production-diary) : production_logs, production_photos
+
+   로그인 없이 주소를 아는 사람이면 누구나 읽고 쓸 수 있습니다.
+   지금(테스트 모드)과 동작이 같고, 만료 날짜만 없앤 규칙입니다.
+   여기 적힌 네 컬렉션 외의 경로는 Firestore 기본값에 따라 자동으로 차단됩니다. */
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /* --- 기술국 현업일지 (기존 앱) --- */
-    match /tv_logs/{docId} {
-      allow read, write: if true;
-    }
-    match /radio_logs/{docId} {
-      allow read, write: if true;
-    }
-
-    /* --- 제작일지 --- */
-    match /production_logs/{logId} {
-      allow read: if true;
-      allow create, update: if isLog();
-      allow delete: if true;
-    }
-    match /production_photos/{photoId} {
-      allow read: if true;
-      allow create, update: if isPhoto();
-      allow delete: if true;
-    }
-
-    /* 그 외 경로는 전부 차단 */
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    /* 생성·수정일 때만 최소한의 형태를 확인합니다.
-       (엉뚱한 데이터나 장난성 대용량 문서가 들어오는 것을 막는 용도) */
-    function isLog() {
-      return request.resource.data.date is string
-          && request.resource.data.date.matches('\\d{4}-\\d{2}-\\d{2}')
-          && request.resource.data.updatedBy is string
-          && request.resource.data.updatedBy.size() <= 40;
-    }
-
-    function isPhoto() {
-      return request.resource.data.logId is string
-          && request.resource.data.data is string;
-    }
+    match /tv_logs/{docId}            { allow read, write: if true; }
+    match /radio_logs/{docId}         { allow read, write: if true; }
+    match /production_logs/{docId}    { allow read, write: if true; }
+    match /production_photos/{docId}  { allow read, write: if true; }
   }
 }

@@ -157,6 +157,7 @@
   .lcard { border:1px solid #aeb8c1; border-radius:8px; padding:8px; margin-bottom:8px; background:#fff; break-inside:avoid; }
   .lc-top { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,.85fr) minmax(0,1.15fr) minmax(0,.95fr) 28px; gap:4px; align-items:center; }
   .lc-3 { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:4px; }
+  .lc-2 { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:4px; }
   .lc-net { margin-top:6px; }
   .lc-side { margin-top:6px; border-radius:6px; padding:5px 6px 6px; }
   .lc-side.tx { background:#eaf1fb; }
@@ -1084,17 +1085,15 @@ function renderLines(){
         ${fld('대역폭', inp(i,'rate','list="dl-rate"'))}
       </div>
       <div class="lc-side tx"><div class="lc-tag">${txL}</div>
-        <div class="lc-3">
-          ${fld('신호', inp(i,'txSig'))}
+        <div class="lc-2">
           ${fld('장비', inp(i,'tx'))}
           ${fld('IP', inp(i,'txIp'))}
         </div>
       </div>
       <div class="lc-side rx"><div class="lc-tag">${rxL}</div>
-        <div class="lc-3">
+        <div class="lc-2">
           ${fld('장비', inp(i,'rx'))}
           ${fld('IP', inp(i,'rxIp'))}
-          ${fld('신호', inp(i,'rxSig'))}
         </div>
       </div>
       <div class="lc-note">${fld('비고', inp(i,'note','placeholder="예) 저지연, 중계차 DHCP, 서버2 동시사용"'))}</div>
