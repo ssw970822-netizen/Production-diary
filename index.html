@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>기술국 제작일지</title>
+<meta name="theme-color" content="#314d68">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="제작일지">
+<style>
+  :root{
+    --bg: #f2f0e8;
+    --panel: #ffffff;
+    --panel-2: #eeebe0;
+    --line: #e2ddcf;
+    --text: #23262b;
+    --text-dim: #8b8a82;
+    --amber: #1f7a5c;
+    --cyan: #2b57a0;
+    --sun-red: #b3382c;
+    --sat-blue: #2b57a0;
+    --navy: #314d68;
+    --navbar-bg: #17212c;
+    --navbar-active: #2a3a4b;
+    --navbar-text: #7c8896;
+    --navbar-text-active: #ffffff;
+    --radius: 12px;
+    --pad: clamp(14px, 4.2vw, 22px);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin:0; padding:0; background:var(--bg); color:var(--text); height:100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #app { max-width: 560px; width:100%; margin: 0 auto; min-height: 100vh; min-height: 100dvh; position:relative; overflow-x:hidden; }
+  .page { display:block; padding-bottom: calc(96px + env(safe-area-inset-bottom)); min-height: 100dvh; }
+  .page.hidden { display:none !important; }
+
+  /* ---------- calendar tab ---------- */
+  .app-header { padding: clamp(16px,4vh,22px) var(--pad) 4px; }
+  .app-header h1 { font-size: clamp(20px, 6vw, 25px); font-weight: 800; margin: 0 0 10px; letter-spacing:-0.01em; }
+  .underline { width: 44px; height: 4px; background: var(--amber); border-radius: 3px; margin-bottom: 12px; }
+
+  .cal-nav { display:flex; align-items:center; justify-content:center; gap:10px; padding: 0 var(--pad) 12px; }
+  .navbtn {
+    background: #fff; border: 1px solid #b8c3cc; color: var(--navy);
+    width: 34px; height: 34px; border-radius: 8px; font-size: 16px; font-weight:700; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto; line-height:1; padding:0; font-family:inherit;
+  }
+  .navbtn:active { background: var(--panel-2); }
+  .cal-month { flex:0 0 auto; text-align:center; font-size: 17px; font-weight: bold; color:var(--navy); min-width:96px; }
+  .todaybtn {
+    background: #fff; border: 1px solid #b8c3cc; color: var(--amber);
+    border-radius: 8px; padding: 0 12px; height:34px; font-size: 13px; font-weight:700; cursor:pointer; white-space:nowrap; font-family:inherit;
+  }
+  .backupbtn {
+    background: var(--navy); border: 1px solid var(--navy); color: #fff;
+    border-radius: 8px; padding: 0 12px; height:34px; font-size: 13px; font-weight:700; cursor:pointer; white-space:nowrap; font-family:inherit;
+  }
+
+  #page-calendar { display:flex; flex-direction:column; }
+  #page-calendar.hidden { display:none !important; }
+  .cal-card {
+    margin: 0 var(--pad) 8px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: clamp(10px,3vw,16px) clamp(8px,2.4vw,14px) clamp(12px,3vw,16px);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    flex: 1 1 auto; display:flex; flex-direction:column; min-height:0;
+  }
+  .dow-row { display:grid; grid-template-columns: repeat(7, 1fr); margin-bottom:8px; }
+  .dow-row div { text-align:center; font-size: clamp(11px,3vw,12px); font-weight:700; padding: 4px 0; }
+  .dow-row div.sun { color: var(--sun-red); }
+  .dow-row div.sat { color: var(--sat-blue); }
+  .day-row { display:grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: minmax(58px, 1fr); gap: clamp(3px,1.2vw,5px); flex:1 1 auto; }
+  .day-cell {
+    position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-radius: 10px; font-size: clamp(13px,3.6vw,16px); cursor:pointer;
+    background: var(--panel); border: 1px solid var(--line); color: var(--text);
+  }
+  .day-cell.blank { visibility:hidden; cursor:default; }
+  .day-cell.weekend-tint { background: var(--panel-2); }
+  .day-cell.today { border-color: var(--amber); border-width:2px; }
+  .day-cell.selected { background: var(--amber); border-color: var(--amber); }
+  .day-cell.selected .num, .day-cell.selected .num.sun, .day-cell.selected .num.sat, .day-cell.selected .tag { color:#fff; }
+  .day-cell:active { filter: brightness(0.96); }
+  .day-cell .num.sun { color: var(--sun-red); font-weight:700; }
+  .day-cell .num.sat { color: var(--sat-blue); font-weight:700; }
+  .day-cell .tag { margin-top:4px; font-size: clamp(9px,2.6vw,11px); color: var(--cyan); font-weight:700; }
+  .legend-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px var(--pad) 4px; font-size:12px; color:var(--text-dim); }
+  .legend-row b { color: var(--cyan); }
+  .cal-status { font-size:12px; color:var(--text-dim); }
+  .cal-status.err { color: var(--sun-red); }
+
+  /* ---------- bottom nav ---------- */
+  .bottom-nav {
+    position: fixed; left:0; right:0; bottom:0; z-index:50;
+    max-width: 560px; margin: 0 auto;
+    background: var(--navbar-bg); display:flex; padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+    border-radius: 18px 18px 0 0;
+  }
+  .nav-btn {
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
+    padding: 8px 4px; border-radius: 12px; cursor:pointer; color: var(--navbar-text);
+    background: transparent; border:none; font-family:inherit;
+  }
+  .nav-btn svg { width:22px; height:22px; }
+  .nav-btn span { font-size: clamp(10px,2.8vw,11px); font-weight:600; }
+  .nav-btn.active { background: var(--navbar-active); color: var(--navbar-text-active); }
+
+  /* ---------- list / edit pages (현업일지 스타일) ---------- */
+  .sheet { background:#eef2f5; color:#202a33; font-family:"Malgun Gothic","Noto Sans KR",Arial,sans-serif; font-size:14px; min-height:100dvh; }
+  .sheet header { position:sticky; top:0; z-index:5; background:var(--navy); color:#fff; padding:14px; box-shadow:0 2px 7px #0003; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .sheet header h1 { margin:0; font-size:21px; font-weight:bold; }
+  .sheet header .hsub { font-size:12px; opacity:.8; white-space:nowrap; }
+  .sheet .wrap { padding:8px; }
+  .date-nav-row { display:flex; align-items:center; justify-content:center; gap:10px; padding:12px 4px 5px; }
+  .date-display { text-align:center; font-size:17px; font-weight:bold; color:var(--navy); }
+  .date-display .dow { font-size:14px; color:#64717d; margin-left:4px; }
+
+  .card { background:#fff; margin:8px 0; border:1px solid #cbd4dc; border-radius:9px; overflow:hidden; }
+  .card .title { background:#e7edf2; padding:9px 11px; font-weight:bold; color:#29445b; border-bottom:1px solid #adb9c3; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .card .title .count { font-size:12px; font-weight:700; color:var(--navy); background:#fff; border:1px solid #b8c3cc; border-radius:20px; padding:2px 9px; }
+  .card .sec { padding:9px; }
+
+  .grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
+  .grid > * { min-width:0; }
+  .grid .full { grid-column:1/-1; }
+  .tsel { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr); gap:4px; }
+  .sheet .tsel select { padding:7px 2px 7px 5px; font-size:13px; }
+  .field .label { font-size:12px; font-weight:bold; color:#66737e; margin-bottom:3px; }
+  .field .label .req { color:var(--sun-red); }
+  .sheet input, .sheet select, .sheet textarea {
+    width:100%; min-height:38px; border:1px solid #b8c3cc; border-radius:6px; padding:7px; font-size:14px; background:#fff; color:#202a33; font-family:inherit; min-width:0;
+  }
+  .sheet input:focus, .sheet select:focus, .sheet textarea:focus { outline:none; border-color:#537795; box-shadow:0 0 0 2px #53779522; }
+  .sheet input.invalid { border-color:var(--sun-red); box-shadow:0 0 0 2px #b3382c22; }
+  .sheet textarea { min-height:130px; resize:vertical; line-height:1.5; }
+
+  .sheet table { width:100%; border-collapse:collapse; table-layout:fixed; }
+  .sheet th, .sheet td { border:1px solid #aeb8c1; padding:4px; text-align:center; vertical-align:middle; }
+  .sheet th { background:#f3f6f8; font-size:13px; font-weight:600; }
+  .sheet td.rowhead { background:#fafbfc; font-weight:600; font-size:13px; }
+  .sheet td input { text-align:center; font-size:13px; padding:5px 4px; min-height:35px; }
+  .sheet .staff-table td input { text-align:left; }
+  .col-x { width:34px; }
+  /* 카메라: 번호 옆 2줄(비고) 묶음 */
+  .sheet tr.grp-top td { border-top:2px solid #8a99a6; }
+  .sheet td input.extra { text-align:left; font-size:12px; }
+  /* 체크리스트 */
+  .subhead { font-weight:800; color:#344f67; font-size:13px; margin:0 0 6px; }
+  .check-table td { padding:3px 4px; }
+  .check-table .chk { border:0; padding:0; height:auto; justify-content:center; background:transparent; }
+  .sheet .check-table td input:not([type=checkbox]) { text-align:left; }
+  .check-table tr.done input:not([type=checkbox]) { color:#8b98a3; text-decoration:line-through; }
+  /* 전송망 카드 */
+  .lcard { border:1px solid #aeb8c1; border-radius:8px; padding:8px; margin-bottom:8px; background:#fff; break-inside:avoid; }
+  .lc-top { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,.85fr) minmax(0,1.15fr) minmax(0,.95fr) 28px; gap:4px; align-items:center; }
+  .lc-3 { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:4px; }
+  .lc-net { margin-top:6px; }
+  .lc-side { margin-top:6px; border-radius:6px; padding:5px 6px 6px; }
+  .lc-side.tx { background:#eaf1fb; }
+  .lc-side.rx { background:#e8f4ee; }
+  .lc-tag { font-size:12px; font-weight:800; margin:0 0 3px 2px; }
+  .lc-side.tx .lc-tag { color:#2b57a0; }
+  .lc-side.rx .lc-tag { color:#1f7a5c; }
+  .lc-note { margin-top:6px; }
+  .lcard .f { min-width:0; }
+  .lcard .f span { display:block; font-size:11px; color:#66737e; font-weight:700; margin:0 0 2px 2px; }
+  .sheet .lcard input, .sheet .lcard select { min-height:34px; font-size:13px; padding:5px; }
+  .sheet .lcard select { padding:5px 2px; }
+  .sheet .lc-top input { font-weight:800; }
+  .rowdel { width:26px; height:26px; border-radius:6px; border:1px solid #d8c0bc; background:#fff; color:var(--sun-red); font-size:13px; font-weight:700; cursor:pointer; padding:0; line-height:1; }
+  .rowdel:active { background:#fbeeee; }
+  .addrow { width:100%; margin-top:8px; height:40px; border:1.5px dashed #9fb0bf; border-radius:7px; background:#f7f9fb; color:var(--navy); font-weight:700; font-size:14px; cursor:pointer; font-family:inherit; }
+  .addrow:active { background:#eef2f5; }
+  .subrow { display:grid; grid-template-columns:1fr auto auto; gap:8px; align-items:end; margin-top:10px; }
+  .subrow .field { min-width:0; }
+  .chk { display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 10px; border:1px solid #b8c3cc; border-radius:6px; background:#fff; font-size:13px; font-weight:600; color:#3d4e5c; cursor:pointer; white-space:nowrap; }
+  .chk input[type="checkbox"] {
+    appearance:none; -webkit-appearance:none; width:20px; height:20px; min-height:20px; padding:0; margin:0;
+    border:2px solid #b8c3cc; border-radius:5px; background-color:#fff; cursor:pointer;
+    background-repeat:no-repeat; background-position:center; background-size:13px 13px;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .chk input[type="checkbox"]:checked {
+    background-color:var(--navy); border-color:var(--navy);
+    background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  }
+
+  /* photos */
+  .photo-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
+  .photo { border:1px solid #cbd4dc; border-radius:8px; overflow:hidden; background:#fafbfc; position:relative; }
+  .photo .thumb { width:100%; aspect-ratio:4/3; object-fit:cover; display:block; background:#e7edf2; cursor:zoom-in; }
+  .photo .thumb.loading { display:flex; align-items:center; justify-content:center; color:#8b98a3; font-size:12px; }
+  .photo input { border:0; border-top:1px solid #e1e6ea; border-radius:0; font-size:12px; min-height:34px; }
+  .photo .rowdel { position:absolute; top:6px; right:6px; background:#ffffffe6; }
+  .photo .badge { position:absolute; left:6px; top:6px; background:#1f7a5c; color:#fff; font-size:10px; font-weight:700; padding:2px 6px; border-radius:10px; }
+  .photo-add { display:flex; align-items:center; justify-content:center; margin-top:8px; }
+  .photo-add label { width:100%; text-align:center; line-height:38px; cursor:pointer; }
+  .photo-empty { font-size:13px; color:#8b98a3; text-align:center; padding:6px 0 2px; }
+
+  /* list page */
+  .entry { display:block; width:100%; text-align:left; background:#fff; border:1px solid #cbd4dc; border-radius:9px; padding:12px; margin:8px 0; cursor:pointer; font-family:inherit; color:inherit; }
+  .entry:active { background:#f7f9fb; }
+  .entry .time { font-size:13px; font-weight:700; color:var(--amber); }
+  .entry .etitle { font-size:16px; font-weight:800; color:#1e2933; margin:3px 0 6px; }
+  .entry .meta { display:flex; flex-wrap:wrap; gap:5px; align-items:center; font-size:12px; color:#64717d; }
+  .pill { display:inline-block; border-radius:20px; padding:2px 8px; font-size:11px; font-weight:700; background:#e7edf2; color:#29445b; }
+  .pill.live { background:#fbeeee; color:var(--sun-red); }
+  .empty { text-align:center; padding:34px 10px; color:#8b98a3; font-size:14px; }
+  .seg { display:grid; grid-template-columns:1fr 1fr; gap:4px; background:#dfe6ec; padding:4px; border-radius:9px; margin-top:8px; }
+  .seg button { border:0; border-radius:7px; height:36px; background:transparent; color:#4f5d68; font-weight:700; font-size:14px; cursor:pointer; font-family:inherit; }
+  .seg button.on { background:#fff; color:var(--navy); box-shadow:0 1px 2px #0002; }
+  .dategrp { font-size:13px; font-weight:800; color:var(--navy); margin:14px 2px 2px; }
+  .dategrp .dow { color:#64717d; font-weight:600; margin-left:4px; }
+  .entry .who { font-size:11px; color:#8b98a3; margin-top:6px; }
+  .banner { position:sticky; top:50px; z-index:4; display:flex; align-items:center; justify-content:space-between; gap:8px; background:#fff4d6; border-bottom:1px solid #e8cf8a; color:#6b5210; padding:9px 12px; font-size:13px; font-weight:600; }
+  .banner[hidden] { display:none; }
+  .banner button { flex:0 0 auto; border:0; border-radius:6px; background:#6b5210; color:#fff; font-weight:700; font-size:12px; padding:7px 10px; cursor:pointer; font-family:inherit; }
+  .banner button:empty { display:none; }
+  .mebtn { border:1px solid #b8c3cc; background:#fff; color:var(--navy); border-radius:8px; padding:5px 9px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap; }
+  .newbtn { width:100%; height:46px; border:0; border-radius:8px; background:var(--navy); color:#fff; font-size:15px; font-weight:800; cursor:pointer; margin-top:8px; font-family:inherit; }
+
+  .bottom { display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px; padding:10px 0 4px; }
+  .bottom button { border:0; border-radius:7px; padding:12px; font-weight:bold; font-size:14px; background:var(--navy); color:#fff; cursor:pointer; font-family:inherit; }
+  .bottom button.danger { background:#fff; color:var(--sun-red); border:1px solid #d8c0bc; }
+  .bottom button:disabled { opacity:.5; cursor:not-allowed; }
+  .savedinfo { text-align:center; font-size:12px; color:#8b98a3; padding:4px 0 8px; }
+
+  @media(max-width:600px){
+    .sheet th { font-size:12px; }
+    .sheet td input { font-size:12px; padding:4px 2px; }
+    .sheet th, .sheet td { padding:3px 2px; }
+  }
+  @media(max-width:440px){ .grid .tfield { grid-column:1/-1; } }
+  @media(max-width:380px){
+    .subrow { grid-template-columns:1fr 1fr; }
+    .subrow .field { grid-column:1/-1; }
+  }
+
+  /* backup sheet */
+  .bk-overlay { position:fixed; inset:0; z-index:100; background:rgba(23,33,44,0.5); display:none; align-items:flex-end; justify-content:center; }
+  .bk-overlay.open { display:flex; }
+  .bk-sheet { width:100%; max-width:560px; background:var(--panel); border-radius:18px 18px 0 0; padding:20px var(--pad) calc(18px + env(safe-area-inset-bottom)); }
+  .bk-sheet h2 { margin:0 0 4px; font-size:18px; font-weight:800; color:var(--navy); }
+  .bk-sheet .bk-sub { margin:0 0 14px; font-size:12px; color:var(--text-dim); }
+  .bk-opt { display:flex; align-items:flex-start; gap:10px; padding:12px; margin-bottom:8px; border:1px solid var(--line); border-radius:10px; cursor:pointer; background:var(--panel); }
+  .bk-opt:has(input:checked) { border-color:var(--navy); background:#eef2f5; }
+  .bk-opt input { margin:3px 0 0; accent-color:var(--navy); width:16px; height:16px; flex:0 0 auto; }
+  .bk-opt strong { display:block; font-size:14px; }
+  .bk-opt small { display:block; margin-top:2px; font-size:12px; color:var(--text-dim); line-height:1.4; }
+  .bk-month { display:flex; align-items:center; justify-content:center; gap:10px; margin:2px 0 8px; }
+  .bk-month.hidden { display:none; }
+  .bk-month-label { min-width:110px; text-align:center; font-size:16px; font-weight:bold; color:var(--navy); }
+  .bk-inc { display:flex; align-items:center; gap:8px; font-size:13px; color:#3d4e5c; margin:4px 2px 0; }
+  .bk-inc input { accent-color:var(--navy); width:16px; height:16px; }
+  .bk-status { min-height:18px; margin:6px 0 10px; font-size:12px; color:var(--text-dim); text-align:center; }
+  .bk-status.err { color:var(--sun-red); }
+  .bk-actions { display:flex; gap:8px; }
+  .bk-actions button { flex:1; height:44px; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .bk-cancel { background:#fff; border:1px solid #b8c3cc; color:var(--navy); }
+  .bk-run { background:var(--navy); border:1px solid var(--navy); color:#fff; }
+  .bk-run:disabled { opacity:0.5; cursor:not-allowed; }
+
+  /* photo viewer + toast */
+  .viewer { position:fixed; inset:0; z-index:120; background:rgba(10,14,18,.92); display:none; align-items:center; justify-content:center; padding:16px; }
+  .viewer.open { display:flex; }
+  .viewer img { max-width:100%; max-height:100%; object-fit:contain; border-radius:6px; }
+  .toast { position:fixed; left:50%; bottom:calc(96px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(10px); background:#17212c; color:#fff; padding:10px 16px; border-radius:20px; font-size:13px; font-weight:600; opacity:0; pointer-events:none; transition:.2s; z-index:130; max-width:90vw; text-align:center; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast.err { background:var(--sun-red); }
+
+  /* print: only the log itself */
+  .print-only { display:none; }
+  @media print {
+    @page { size:A4; margin:12mm; }
+    body, .sheet { background:#fff !important; }
+    #app { max-width:none; }
+    .bottom-nav, .toast, .viewer, .bk-overlay, .banner { display:none !important; }
+    .page { padding-bottom:0 !important; min-height:0; }
+    .no-print, .rowdel, .addrow, .bottom, .savedinfo, .photo-add, .date-nav-row { display:none !important; }
+    .print-only { display:block; }
+    .sheet header { position:static !important; box-shadow:none !important; background:#fff !important; color:#000 !important; border-bottom:2px solid #000; padding:0 0 6px; }
+    .sheet .wrap { padding:0; }
+    .card { break-inside:avoid; border-color:#999; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .card.photos-card { break-inside:auto; }
+    .photo { break-inside:avoid; }
+    .photo-grid { grid-template-columns:repeat(3, minmax(0,1fr)); }
+    .sheet input, .sheet select, .sheet textarea { border-color:#ccc; }
+    .sheet select { appearance:none; -webkit-appearance:none; }
+    .sheet textarea { display:none; }
+    .print-text { display:block; white-space:pre-wrap; border:1px solid #ccc; border-radius:6px; padding:7px; min-height:60px; font-size:13px; line-height:1.5; }
+    input::placeholder, textarea::placeholder { color:transparent !important; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- =================== TAB 1: 달력 =================== -->
+  <div id="page-calendar" class="page"></div>
+
+  <!-- =================== TAB 2: 제작 목록 =================== -->
+  <div id="page-list" class="page hidden">
+    <div class="sheet">
+      <header><h1>제작 목록</h1><span class="hsub" id="listLive"></span></header>
+      <div class="wrap">
+        <div class="seg" id="listMode">
+          <button type="button" data-mode="day" class="on">날짜별</button>
+          <button type="button" data-mode="all">전체 목록</button>
+        </div>
+        <div class="date-nav-row" id="dayNav">
+          <button type="button" class="navbtn" id="listPrev">‹</button>
+          <div class="date-display" id="listDate"></div>
+          <button type="button" class="navbtn" id="listNext">›</button>
+          <button type="button" class="todaybtn" id="listToday">오늘</button>
+        </div>
+        <div id="allNav" style="display:none; padding:10px 0 2px">
+          <input type="search" id="listSearch" placeholder="제목 · 장소 · 작성자 · 인력 검색">
+        </div>
+        <div id="listBody"></div>
+        <button type="button" class="newbtn" id="listNew">+ 새 제작일지 작성</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== TAB 3: 제작일지 편집 =================== -->
+  <div id="page-edit" class="page hidden">
+    <div class="sheet">
+      <header><h1>제작일지</h1><span class="hsub" id="editState"></span></header>
+      <div class="banner" id="editBanner" hidden><span id="bannerText"></span><button type="button" id="bannerBtn"></button></div>
+      <div class="wrap">
+        <form id="editForm" autocomplete="off" onsubmit="return false">
+
+          <!-- 1. 기본 정보 -->
+          <div class="card"><div class="title">기본 정보</div><div class="sec">
+            <div class="grid">
+              <div class="field full"><div class="label">프로그램 제목 <span class="req">*</span></div><input data-k="title" placeholder="예) 춘천 시민의 날 특집 생방송"></div>
+            </div>
+            <div class="grid" style="margin-top:8px">
+              <div class="field full"><div class="label">날짜</div><input type="date" data-k="date"></div>
+              <div class="field tfield"><div class="label">시작</div><div class="tsel" data-t="start"></div></div>
+              <div class="field tfield"><div class="label">종료</div><div class="tsel" data-t="end"></div></div>
+            </div>
+            <div class="grid" style="margin-top:8px">
+              <div class="field full"><div class="label">장소</div><input data-k="place" placeholder="예) 공개홀, 시청 앞 광장"></div>
+              <div class="field"><div class="label">제작 구분</div>
+                <select data-k="category"><option value="">선택</option><option>스튜디오</option><option>현장뉴스룸</option><option>현장중계</option><option>녹화</option><option>ENG</option><option>라디오</option><option>행사</option><option>기타</option></select>
+              </div>
+              <div class="field"><div class="label">제작 형태</div>
+                <select data-k="form"><option value="">선택</option><option>생방송</option><option>녹화</option></select>
+              </div>
+              <div class="field tfield"><div class="label">셋업 시간</div><div class="tsel" data-t="setup"></div></div>
+              <div class="field tfield"><div class="label">철수 시간</div><div class="tsel" data-t="teardown"></div></div>
+              <div class="field full"><div class="label">작성자</div><input data-k="author" list="dl-author"></div>
+            </div>
+          </div></div>
+
+          <!-- 2. 인력 -->
+          <div class="card"><div class="title">인력 <span class="count" id="staffCount">총 0명</span></div><div class="sec">
+            <table class="staff-table">
+              <colgroup><col style="width:34%"><col><col class="col-x"></colgroup>
+              <thead><tr><th>구분</th><th>담당자</th><th class="col-x"></th></tr></thead>
+              <tbody id="staffBody"></tbody>
+            </table>
+            <button type="button" class="addrow" data-add="staff">+ 인력 추가</button>
+          </div></div>
+
+          <!-- 3. 카메라 구성 -->
+          <div class="card"><div class="title">카메라 구성 <span class="count" id="camCount">총 0대</span></div><div class="sec">
+            <table>
+              <colgroup><col style="width:17%"><col style="width:25%"><col><col style="width:26%"><col class="col-x"></colgroup>
+              <thead><tr><th>번호</th><th>종류</th><th>감독명</th><th>렌즈 · 지지</th><th class="col-x"></th></tr></thead>
+              <tbody id="camBody"></tbody>
+            </table>
+            <button type="button" class="addrow" data-add="cameras">+ 카메라 추가</button>
+            <div class="grid" style="margin-top:10px">
+              <div class="field"><div class="label">카메라 리턴 RET 1</div><input data-k="camRet1" placeholder="예) OB PGM"></div>
+              <div class="field"><div class="label">카메라 리턴 RET 2</div><input data-k="camRet2" placeholder="예) HDMSPGM_1"></div>
+            </div>
+          </div></div>
+
+          <!-- 4. 오디오 구성 -->
+          <div class="card"><div class="title">오디오 구성 <span class="count" id="audCount">총 0ch</span></div><div class="sec">
+            <table>
+              <colgroup><col style="width:12%"><col><col style="width:28%"><col style="width:22%"><col class="col-x"></colgroup>
+              <thead><tr><th>번호</th><th>채널 / 용도</th><th>마이크 기종</th><th>무선·유선</th><th class="col-x"></th></tr></thead>
+              <tbody id="audBody"></tbody>
+            </table>
+            <button type="button" class="addrow" data-add="audio">+ 채널 추가</button>
+            <div class="subrow">
+              <div class="field"><div class="label">믹서 기종</div><input data-k="mixer"></div>
+              <label class="chk"><input type="checkbox" data-k="inear">인이어</label>
+              <label class="chk"><input type="checkbox" data-k="talkback">토크백</label>
+            </div>
+          </div></div>
+
+          <!-- 5. 전송망 구성 -->
+          <!-- 인터컴 -->
+          <div class="card"><div class="title">인터컴 <span class="count" id="icomCount">총 0</span></div><div class="sec">
+            <table>
+              <colgroup><col style="width:26%"><col><col style="width:22%"><col class="col-x"></colgroup>
+              <thead><tr><th>사용자</th><th>장비</th><th>무선·유선</th><th class="col-x"></th></tr></thead>
+              <tbody id="icomBody"></tbody>
+            </table>
+            <button type="button" class="addrow" data-add="intercom">+ 인터컴 추가</button>
+          </div></div>
+
+          <!-- 모니터 -->
+          <div class="card"><div class="title">모니터 <span class="count" id="monCount">총 0</span></div><div class="sec">
+            <table>
+              <colgroup><col style="width:34%"><col><col style="width:26%"><col class="col-x"></colgroup>
+              <thead><tr><th>용도</th><th>장비</th><th>소스</th><th class="col-x"></th></tr></thead>
+              <tbody id="monBody"></tbody>
+            </table>
+            <button type="button" class="addrow" data-add="monitors">+ 모니터 추가</button>
+          </div></div>
+
+          <!-- 5. 전송망 구성 -->
+          <div class="card"><div class="title">전송망 구성 <span class="count" id="lineCount">총 0회선</span></div><div class="sec">
+            <div id="lineBody"></div>
+            <button type="button" class="addrow" data-add="lines">+ 회선 추가</button>
+          </div></div>
+
+          <!-- 단계별 리턴 운용 -->
+          <div class="card"><div class="title">단계별 리턴 운용</div><div class="sec">
+            <table>
+              <colgroup><col style="width:26%"><col><col><col class="col-x"></colgroup>
+              <thead><tr><th>단계</th><th>비디오</th><th>오디오</th><th class="col-x"></th></tr></thead>
+              <tbody id="phaseBody"></tbody>
+            </table>
+            <button type="button" class="addrow" data-add="phases">+ 단계 추가</button>
+          </div></div>
+
+          <!-- 준비 · 점검 -->
+          <div class="card"><div class="title">준비 · 점검 <span class="count" id="chkCount">0/0</span></div><div class="sec">
+            <div class="subhead">사전 점검</div>
+            <table class="check-table">
+              <colgroup><col style="width:44px"><col><col class="col-x"></colgroup>
+              <tbody id="prepBody"></tbody>
+            </table>
+            <button type="button" class="addrow" data-add="prep">+ 점검 항목 추가</button>
+            <div class="subhead" style="margin-top:14px">장비 준비물</div>
+            <table class="check-table">
+              <colgroup><col style="width:44px"><col><col class="col-x"></colgroup>
+              <tbody id="gearBody"></tbody>
+            </table>
+            <button type="button" class="addrow" data-add="gear">+ 준비물 추가</button>
+          </div></div>
+
+          <!-- 6. 현장 사진 -->
+          <div class="card photos-card"><div class="title">현장 사진 <span class="count" id="photoCount">0장</span></div><div class="sec">
+            <div class="photo-grid" id="photoGrid"></div>
+            <div class="photo-empty" id="photoEmpty">등록된 사진이 없습니다.</div>
+            <div class="photo-add">
+              <label class="addrow" for="photoInput">+ 사진 추가</label>
+              <input type="file" id="photoInput" accept="image/*" multiple hidden>
+            </div>
+          </div></div>
+
+          <!-- 7. 작업 내용 · 특이사항 -->
+          <div class="card"><div class="title">작업 내용 · 특이사항</div><div class="sec">
+            <div class="field"><div class="label">진행 경과</div><textarea data-k="progress" placeholder="셋업 → 리허설 → 본방송 → 철수 순으로 진행 경과를 입력하세요"></textarea><div class="print-only print-text" data-print="progress"></div></div>
+            <div class="field" style="margin-top:8px"><div class="label">특이사항 · 장애</div><textarea data-k="issues" placeholder="장애 내용, 조치사항, 다음 제작 시 참고할 점"></textarea><div class="print-only print-text" data-print="issues"></div></div>
+          </div></div>
+        </form>
+
+        <div class="bottom">
+          <button type="button" id="saveBtn">저장</button>
+          <button type="button" id="printBtn">인쇄 / PDF</button>
+          <button type="button" class="danger" id="deleteBtn">삭제</button>
+        </div>
+        <div class="savedinfo" id="savedInfo"></div>
+
+        <datalist id="dl-camtype"><option value="ENG"><option value="EFP"><option value="DSLR"><option value="지미집"><option value="스테디캠"><option value="PTZ"><option value="드론"><option value="액션캠"></datalist>
+        <datalist id="dl-support"><option value="삼각대"><option value="페데스탈"><option value="숄더"><option value="핸드헬드"><option value="짐벌"></datalist>
+        <datalist id="dl-roles"></datalist>
+        <datalist id="dl-camdir"></datalist>
+        <datalist id="dl-wire"><option value="무선"><option value="유선"></datalist>
+        <datalist id="dl-line"><option value="PGM"><option value="리턴"><option value="인터컴"><option value="백업"></datalist>
+        <datalist id="dl-net"><option value="KT 광랜(1)"><option value="KT 광랜(2)"><option value="KT 광랜(3)"><option value="LTE"></datalist>
+        <datalist id="dl-rate"><option value="6M"><option value="10M"><option value="18M"></datalist>
+        <datalist id="dl-icomuser"><option value="ANC"><option value="FD"><option value="PD"><option value="카메라"><option value="오디오"></datalist>
+        <datalist id="dl-icomgear"><option value="헤드셋"><option value="이어셋"><option value="무선 벨트팩"></datalist>
+        <datalist id="dl-author"></datalist>
+        <div id="staffLists"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-tab="calendar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
+    <span>달력</span>
+  </button>
+  <button class="nav-btn" data-tab="list">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>
+    <span>제작목록</span>
+  </button>
+  <button class="nav-btn" data-tab="edit">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+    <span>제작일지</span>
+  </button>
+</nav>
+
+<div class="bk-overlay" id="bkOverlay" role="dialog" aria-modal="true" aria-labelledby="bkTitle">
+  <div class="bk-sheet">
+    <h2 id="bkTitle">데이터 백업</h2>
+    <p class="bk-sub">저장된 제작일지를 JSON 파일로 내려받습니다.</p>
+    <label class="bk-opt">
+      <input type="radio" name="bkScope" value="month" checked>
+      <span><strong>월별 백업</strong><small>선택한 달의 제작일지 (기본)</small></span>
+    </label>
+    <div class="bk-month" id="bkMonthRow">
+      <button type="button" class="navbtn" id="bkPrev" aria-label="이전 달">‹</button>
+      <div class="bk-month-label" id="bkMonthLabel"></div>
+      <button type="button" class="navbtn" id="bkNext" aria-label="다음 달">›</button>
+    </div>
+    <label class="bk-opt">
+      <input type="radio" name="bkScope" value="all">
+      <span><strong>전체 백업</strong><small>모든 기간의 제작일지를 한 파일로 저장</small></span>
+    </label>
+    <label class="bk-inc"><input type="checkbox" id="bkPhotos">사진 원본 데이터도 포함 (파일이 커집니다)</label>
+    <div class="bk-status" id="bkStatus" aria-live="polite"></div>
+    <div class="bk-actions">
+      <button type="button" class="bk-cancel" id="bkCancel">닫기</button>
+      <button type="button" class="bk-run" id="bkRun">백업 다운로드</button>
+    </div>
+  </div>
+</div>
+
+<div class="viewer" id="viewer"><img id="viewerImg" alt=""></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+/* =========================================================
+   FIREBASE — 현업일지와 같은 프로젝트, 컬렉션만 분리
+   ========================================================= */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+  getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, where, onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import {
+  getStorage, ref as sRef, uploadBytes, getDownloadURL, deleteObject
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAZxNMz_RR0vyos7My8wYq6NLPiDk5smD8",
+  authDomain: "work-dairy-48ffb.firebaseapp.com",
+  projectId: "work-dairy-48ffb",
+  storageBucket: "work-dairy-48ffb.firebasestorage.app",
+  messagingSenderId: "744194512360",
+  appId: "1:744194512360:web:81c7177afc8013bd71005d",
+  measurementId: "G-TCJ5N8FEWW"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const LOG_COLLECTION = 'production_logs';
+const PHOTO_COLLECTION = 'production_photos';   // PHOTO_BACKEND === 'firestore' 일 때 사진 저장소
+
+/* 사진 저장 방식
+   'storage'   : Firebase Storage  production-photos/날짜/ 경로 (Storage 활성화 필요 — Blaze 요금제)
+   'firestore' : Firestore 문서에 압축 이미지 저장 (Storage 없이 바로 동작, 장당 1MB 미만으로 자동 압축)
+   현재 프로젝트는 Storage 버킷이 없어 'firestore' 로 둡니다. Storage 를 켜면 'storage' 로 바꾸세요. */
+const PHOTO_BACKEND = 'firestore';
+const PHOTO_LONG_SIDE = 1600;
+const FS_PHOTO_LIMIT = 900000; // base64 문자 수 상한 (Firestore 문서 1MiB 제한 대비)
+
+/* =========================================================
+   COMMON HELPERS
+   ========================================================= */
+const DOW = ['일','월','화','수','목','금','토'];
+const TAB_ORDER = ['calendar','list','edit'];
+const $ = id => document.getElementById(id);
+function pad(n){ return String(n).padStart(2,'0'); }
+function fmtKey(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function todayKey(){ return fmtKey(new Date()); }
+function parseKey(k){ const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); }
+function addDays(k, n){ const d = parseKey(k); d.setDate(d.getDate()+n); return fmtKey(d); }
+function dateLabel(k){ const d = parseKey(k); return { main:`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`, dow: DOW[d.getDay()]+'요일' }; }
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function monthRange(y, m){ return [ `${y}-${pad(m+1)}-01`, `${y}-${pad(m+1)}-${pad(new Date(y, m+1, 0).getDate())}` ]; }
+
+let toastTimer;
+function toast(msg, isErr){
+  const t = $('toast');
+  t.textContent = msg; t.classList.toggle('err', !!isErr); t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'), isErr ? 3800 : 2000);
+}
+function lsGet(k, fb){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch(e){ return fb; } }
+function lsSet(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+
+/* =========================================================
+   DATA MODEL
+   ========================================================= */
+const DEFAULT_ROLES = ['TD','PD','비디오','오디오','FD','카메라감독','진행자','중계차 운용'];
+const ROLE_SUGGEST = [...DEFAULT_ROLES, '작가','조명','CG','음향','발전차','기타'];
+// 예전 저장 형식(고정 항목 객체) → 행 배열
+const OLD_STAFF_KEYS = [['td','TD'],['pd','PD'],['video','비디오'],['audio','오디오'],['fd','FD'],['camdir','카메라감독'],['mc','진행자'],['ob','중계차 운용'],['etc','기타']];
+// 기본 회선 (중계차 구성도 기준): [회선, 주/예, 방향]
+const DEFAULT_LINES = [
+  ['PGM1','주','송출'], ['인터컴','주','양방향'],
+  ['PGM2','예비','송출'], ['리턴1','예비','리턴'],
+  ['PGM3','예비','송출'], ['리턴2','예비','리턴']
+];
+const DEFAULT_INTERCOM = [['ANC','이어셋'], ['FD','헤드셋']];
+const DEFAULT_MONITORS = ['앵커용 On-Air 모니터', '현장용 프로젝터'];
+const DEFAULT_PHASES = ['생방송 직전', '생방송'];
+const DEFAULT_PREP = ['연주소 KT 전송장비 설치', '전송장비 / 제작장비 회로 구성', 'DVE 화면분할 구성 점검'];
+const DEFAULT_GEAR = [
+  '무선 마이크 & 수신기', '유선 마이크 (예비)', '현장 PA용 스피커', '오디오 케이블', '전원연장드럼 & 멀티콘센트',
+  '인터컴 송수신기 & 연장 UTP케이블', '인터컴 헤드셋 & 이어셋', '프롬프터', 'LTE 라우터',
+  '앵커용 On-Air 모니터', '프로젝터 & 스크린 · 지지대', 'HDMI 컨버터'
+];
+
+function blankLog(date){
+  return {
+    id: null, date, title:'', start:'', end:'', place:'', category:'', form:'',
+    setup:'', teardown:'', author: lsGet('pd_lastAuthor', ''),
+    staff: DEFAULT_ROLES.map(role=>({ role, name:'' })),
+    cameras: [0,1,2].map(()=>ROW_BLANK.cameras()),
+    camRet1:'', camRet2:'',
+    audio: [0,1].map(()=>ROW_BLANK.audio()),
+    mixer:'', inear:false, talkback:false,
+    intercom: DEFAULT_INTERCOM.map(([user, gear])=>({ ...ROW_BLANK.intercom(), user, gear })),
+    monitors: DEFAULT_MONITORS.map(use=>({ ...ROW_BLANK.monitors(), use })),
+    lines: DEFAULT_LINES.map(([name, main, dir])=>({ ...ROW_BLANK.lines(), name, main, dir })),
+    phases: DEFAULT_PHASES.map(phase=>({ ...ROW_BLANK.phases(), phase })),
+    prep: DEFAULT_PREP.map(text=>({ text, done:false })),
+    gear: DEFAULT_GEAR.map(text=>({ text, done:false })),
+    photos: [],
+    progress:'', issues:''
+  };
+}
+const ROW_BLANK = {
+  staff:    ()=>({ role:'', name:'' }),
+  cameras:  ()=>({ type:'', director:'', support:'', note:'' }),
+  audio:    ()=>({ channel:'', mic:'', wire:'' }),
+  intercom: ()=>({ user:'', gear:'', wire:'' }),
+  monitors: ()=>({ use:'', gear:'', source:'' }),
+  lines:    ()=>({ name:'', main:'', dir:'송출', method:'', net:'', rate:'', status:'',
+                   txSig:'', tx:'', txIp:'', rx:'', rxIp:'', rxSig:'', note:'' }),
+  phases:   ()=>({ phase:'', video:'', audio:'' }),
+  prep:     ()=>({ text:'', done:false }),
+  gear:     ()=>({ text:'', done:false })
+};
+const normRows = (kind, rows) => (rows||[]).map(r=>({ ...ROW_BLANK[kind](), ...r }));
+function staffRows(staff){
+  if(Array.isArray(staff)) return staff.map(r=>({ ...ROW_BLANK.staff(), ...r }));
+  if(staff && typeof staff === 'object') return OLD_STAFF_KEYS.map(([k,role])=>({ role, name: staff[k]||'' })).filter(r=> r.role!=='기타' || r.name);
+  return DEFAULT_ROLES.map(role=>({ role, name:'' }));
+}
+function fixMethod(m){ return m === '공중파 M/W' ? 'M/W' : (m || ''); }
+function staffName(staff, role){
+  if(Array.isArray(staff)) return staff.find(r=>r.role===role)?.name || '';
+  return staff?.[role.toLowerCase()] || '';
+}
+
+/* =========================================================
+   STATE
+   ========================================================= */
+let selectedDate = todayKey();
+let cur = null;            // 편집 중인 일지
+let dirty = false;
+let removedPhotos = [];    // 저장 시 지울 기존 사진
+let saving = false;
+
+/* =========================================================
+   TAB SWITCHING (+ swipe)
+   ========================================================= */
+let currentTab = 'calendar';
+function confirmLeave(){
+  if(currentTab === 'edit' && dirty) return confirm('저장하지 않은 내용이 있습니다. 그래도 이동할까요?');
+  return true;
+}
+/* 실시간 구독: 다른 사람이 저장·삭제하면 화면이 바로 갱신됨 */
+const subs = {};
+function live(key, target, onData, onErr){
+  unlive(key);
+  subs[key] = onSnapshot(target, onData, e=>{ console.error(e); onErr?.(e); });
+}
+function unlive(key){ if(subs[key]){ subs[key](); delete subs[key]; } }
+
+/* 내 이름: 저장할 때 '수정한 사람'으로 기록 (이 기기에만 기억) */
+function getMe(){ return lsGet('pd_me', ''); }
+function askMe(force){
+  let me = getMe();
+  if(me && !force) return me;
+  const v = prompt('이 기기에서 쓸 이름을 입력하세요.\n저장할 때 "수정한 사람"으로 기록됩니다.', me || cur?.author || '');
+  if(v === null) return force ? me : '';
+  me = v.trim(); if(me) lsSet('pd_me', me);
+  return me;
+}
+function fmtWhen(ts){
+  if(!ts) return '';
+  const d = new Date(ts), t = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return fmtKey(d) === todayKey() ? `오늘 ${t}` : `${d.getMonth()+1}/${d.getDate()} ${t}`;
+}
+
+function switchTab(tab, {force=false}={}){
+  if(!force && tab !== currentTab && !confirmLeave()) return;
+  if(currentTab === 'edit' && tab !== 'edit') dirty = false;
+  if(tab !== 'calendar') unlive('cal');
+  if(tab !== 'list') unlive('list');
+  if(tab !== 'edit') unlive('doc');
+  currentTab = tab;
+  document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
+  $('page-'+tab).classList.remove('hidden');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  window.scrollTo(0,0);
+  if(tab==='calendar') renderCalendar();
+  else if(tab==='list') renderList();
+  else if(tab==='edit'){ if(!cur) openNew(); else { renderEdit(); watchDoc(); } }
+}
+document.querySelectorAll('.nav-btn').forEach(b=> b.addEventListener('click', ()=> switchTab(b.dataset.tab)));
+window.addEventListener('beforeunload', e=>{ if(dirty){ e.preventDefault(); e.returnValue=''; } });
+
+(function setupSwipe(){
+  let sx=0, sy=0, st=0, tracking=false;
+  document.addEventListener('touchstart', e=>{
+    if(e.target.closest('input, textarea, select, button, label, table, .bk-overlay, .viewer')) { tracking=false; return; }
+    const t=e.touches[0]; sx=t.clientX; sy=t.clientY; st=Date.now(); tracking=true;
+  }, {passive:true});
+  document.addEventListener('touchend', e=>{
+    if(!tracking) return; tracking=false;
+    const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
+    if(Math.abs(dx) > 65 && Math.abs(dy) < 60 && Date.now()-st < 700){
+      const i = TAB_ORDER.indexOf(currentTab);
+      if(dx < 0 && i < TAB_ORDER.length-1) switchTab(TAB_ORDER[i+1]);
+      else if(dx > 0 && i > 0) switchTab(TAB_ORDER[i-1]);
+    }
+  }, {passive:true});
+})();
+
+/* =========================================================
+   TAB 1: CALENDAR
+   ========================================================= */
+const calState = { cursor: new Date(), counts: {}, err: false };
+
+
+function drawCalendar(){
+  const el = $('page-calendar');
+  const y = calState.cursor.getFullYear(), m = calState.cursor.getMonth();
+  const startDow = new Date(y, m, 1).getDay();
+  const days = new Date(y, m+1, 0).getDate();
+  const tKey = todayKey();
+  let cells = '';
+  for(let i=0;i<startDow;i++) cells += `<div class="day-cell blank"></div>`;
+  for(let day=1; day<=days; day++){
+    const d = new Date(y,m,day), key = fmtKey(d), dow = d.getDay();
+    const cls = ['day-cell'];
+    if(key===tKey) cls.push('today');
+    if(key===selectedDate) cls.push('selected');
+    if(dow===0 || dow===6) cls.push('weekend-tint');
+    const n = calState.counts[key];
+    cells += `<div class="${cls.join(' ')}" data-date="${key}">
+      <span class="num ${dow===0?'sun':(dow===6?'sat':'')}">${day}</span>
+      ${n ? `<span class="tag">${n}건</span>` : ''}
+    </div>`;
+  }
+  const total = Object.values(calState.counts).reduce((a,b)=>a+b, 0);
+  el.innerHTML = `
+    <div class="app-header"><h1>기술국 제작일지</h1><div class="underline"></div></div>
+    <div class="cal-nav">
+      <button class="navbtn" id="prevMonth">‹</button>
+      <div class="cal-month">${y}년 ${pad(m+1)}월</div>
+      <button class="navbtn" id="nextMonth">›</button>
+      <button class="todaybtn" id="todayBtn">오늘</button>
+      <button class="backupbtn" id="backupBtn">백업</button>
+    </div>
+    <div class="cal-card">
+      <div class="dow-row">${DOW.map((d,i)=>`<div class="${i===0?'sun':(i===6?'sat':'')}">${d}</div>`).join('')}</div>
+      <div class="day-row">${cells}</div>
+    </div>
+    <div class="legend-row">
+      <button type="button" class="mebtn" id="meBtn">👤 ${esc(getMe() || '내 이름 설정')}</button>
+      <span class="cal-status ${calState.err?'err':''}">${calState.err ? '불러오기 실패' : `이번 달 <b>${total}건</b> · 실시간`}</span>
+    </div>`;
+  $('meBtn').onclick = ()=>{ askMe(true); drawCalendar(); };
+  $('prevMonth').onclick = ()=>{ calState.cursor = new Date(y, m-1, 1); renderCalendar(); };
+  $('nextMonth').onclick = ()=>{ calState.cursor = new Date(y, m+1, 1); renderCalendar(); };
+  $('todayBtn').onclick = ()=>{ calState.cursor = new Date(); selectedDate = todayKey(); renderCalendar(); };
+  $('backupBtn').onclick = openBackup;
+  el.querySelectorAll('.day-cell[data-date]').forEach(c=> c.onclick = ()=>{
+    selectedDate = c.dataset.date;
+    switchTab('list');
+  });
+}
+function renderCalendar(){
+  drawCalendar();
+  const [a, b] = monthRange(calState.cursor.getFullYear(), calState.cursor.getMonth());
+  live('cal', query(collection(db, LOG_COLLECTION), where('date','>=',a), where('date','<=',b)), snap=>{
+    const counts = {};
+    snap.docs.forEach(d=>{ const k = d.data().date; counts[k] = (counts[k]||0)+1; });
+    calState.counts = counts; calState.err = false;
+    if(currentTab==='calendar') drawCalendar();
+  }, ()=>{ calState.counts = {}; calState.err = true; if(currentTab==='calendar') drawCalendar(); });
+}
+
+/* =========================================================
+   TAB 2: DAY LIST
+   ========================================================= */
+const listState = { mode: 'day', logs: [], search: '' };
+function entryHtml(l){
+  const time = (l.start || l.end) ? `${fmtTime(l.start)||'--:--'} ~ ${fmtTime(l.end)||'--:--'}` : '시간 미정';
+  const pills = [
+    l.category && `<span class="pill">${esc(l.category)}</span>`,
+    l.form && `<span class="pill ${l.form==='생방송'?'live':''}">${esc(l.form)}</span>`
+  ].filter(Boolean).join('');
+  const extra = [l.place, staffName(l.staff,'PD') && `PD ${staffName(l.staff,'PD')}`, (l.cameras?.length ? `CAM ${l.cameras.length}대` : '')].filter(Boolean).map(esc).join(' · ');
+  const writer = l.createdBy || l.author;
+  const who = [writer && `작성 ${esc(writer)}`, l.updatedAt && `수정 ${esc(l.updatedBy || writer || '')} ${fmtWhen(l.updatedAt)}`].filter(Boolean).join(' · ');
+  return `<button type="button" class="entry" data-id="${esc(l.id)}">
+    <div class="time">${time}</div>
+    <div class="etitle">${esc(l.title || '(제목 없음)')}</div>
+    <div class="meta">${pills}<span>${extra}</span></div>
+    ${who ? `<div class="who">${who}</div>` : ''}
+  </button>`;
+}
+function searchText(l){
+  const staff = Array.isArray(l.staff) ? l.staff.map(s=>`${s.role} ${s.name}`).join(' ') : Object.values(l.staff||{}).join(' ');
+  return [l.title, l.place, l.category, l.form, l.author, l.createdBy, l.updatedBy, staff].join(' ').toLowerCase();
+}
+function drawList(){
+  const body = $('listBody');
+  let logs = listState.logs;
+  if(listState.mode === 'day'){
+    logs = [...logs].sort((a,b)=> (a.start||'99').localeCompare(b.start||'99') || (a.title||'').localeCompare(b.title||''));
+    body.innerHTML = logs.length ? logs.map(entryHtml).join('') : `<div class="empty">이 날짜에 기록된 제작이 없습니다.</div>`;
+  }else{
+    const q = listState.search.trim().toLowerCase();
+    if(q) logs = logs.filter(l=> searchText(l).includes(q));
+    logs = [...logs].sort((a,b)=> (b.date||'').localeCompare(a.date||'') || (a.start||'99').localeCompare(b.start||'99'));
+    let lastDate = '', html = '';
+    for(const l of logs){
+      if(l.date !== lastDate){
+        lastDate = l.date;
+        const lbl = l.date ? dateLabel(l.date) : { main:'날짜 없음', dow:'' };
+        html += `<div class="dategrp">${lbl.main}<span class="dow">${lbl.dow}</span></div>`;
+      }
+      html += entryHtml(l);
+    }
+    body.innerHTML = html || `<div class="empty">${q ? '검색 결과가 없습니다.' : '저장된 제작일지가 없습니다.'}</div>`;
+    $('listLive').textContent = `전체 ${listState.logs.length}건`;
+  }
+  body.querySelectorAll('.entry').forEach(b=> b.onclick = ()=> openExisting(listState.logs.find(x=>x.id===b.dataset.id)));
+}
+function renderList(){
+  const isDay = listState.mode === 'day';
+  document.querySelectorAll('#listMode button').forEach(b=> b.classList.toggle('on', b.dataset.mode === listState.mode));
+  $('dayNav').style.display = isDay ? '' : 'none';
+  $('allNav').style.display = isDay ? 'none' : '';
+  $('listLive').textContent = '';
+  if(isDay){ const lbl = dateLabel(selectedDate); $('listDate').innerHTML = `${lbl.main}<span class="dow">${lbl.dow}</span>`; }
+  $('listBody').innerHTML = `<div class="empty">불러오는 중…</div>`;
+  const target = isDay ? query(collection(db, LOG_COLLECTION), where('date','==',selectedDate)) : collection(db, LOG_COLLECTION);
+  live('list', target, snap=>{
+    listState.logs = snap.docs.map(d=>({ ...d.data(), id:d.id }));
+    if(currentTab==='list') drawList();
+  }, ()=>{ $('listBody').innerHTML = `<div class="empty">목록을 불러오지 못했습니다.<br>네트워크 상태를 확인하세요.</div>`; });
+}
+document.querySelectorAll('#listMode button').forEach(b=> b.onclick = ()=>{
+  if(listState.mode === b.dataset.mode) return;
+  listState.mode = b.dataset.mode; renderList();
+});
+$('listSearch').addEventListener('input', e=>{ listState.search = e.target.value; drawList(); });
+function moveListDate(k){ selectedDate = k; calState.cursor = parseKey(k); renderList(); }
+$('listPrev').onclick = ()=> moveListDate(addDays(selectedDate,-1));
+$('listNext').onclick = ()=> moveListDate(addDays(selectedDate, 1));
+$('listToday').onclick = ()=> moveListDate(todayKey());
+$('listNew').onclick = ()=>{ openNew(); switchTab('edit', {force:true}); };
+
+/* =========================================================
+   TAB 3: EDITOR
+   ========================================================= */
+const form = $('editForm');
+
+function openNew(){
+  cur = blankLog(selectedDate); dirty = false; removedPhotos = [];
+  unlive('doc'); hideBanner();
+  renderEdit();
+}
+function openExisting(log){
+  cur = hydrate(log);
+  dirty = false; removedPhotos = []; hideBanner();
+  switchTab('edit', {force:true});
+  loadPhotoData();
+}
+
+/* --- 여러 명 동시 작성: 열어 둔 일지를 다른 사람이 저장하면 알림 --- */
+function showBanner(text, btnLabel, onClick){
+  $('bannerText').textContent = text;
+  $('bannerBtn').textContent = btnLabel || '';
+  $('bannerBtn').onclick = onClick || null;
+  $('editBanner').hidden = false;
+}
+function hideBanner(){ $('editBanner').hidden = true; }
+function applyRemote(snap){
+  cur = hydrate({ ...snap.data(), id: snap.id });
+  dirty = false; removedPhotos = []; hideBanner();
+  renderEdit(); loadPhotoData();
+}
+function watchDoc(){
+  if(!cur?.id){ unlive('doc'); return; }
+  const id = cur.id;
+  live('doc', doc(db, LOG_COLLECTION, id), snap=>{
+    if(!cur || cur.id !== id || saving) return;
+    if(!snap.exists()){ showBanner('다른 사용자가 이 일지를 삭제했습니다. 저장하면 다시 만들어집니다.'); return; }
+    const s = snap.data();
+    if(!s.updatedAt || s.updatedAt === cur.updatedAt) return;
+    const who = s.updatedBy || '다른 사용자';
+    if(!dirty){
+      applyRemote(snap);
+      toast(`${who}님이 수정한 내용이 반영되었습니다`);
+    }else{
+      showBanner(`${who}님이 ${fmtWhen(s.updatedAt)}에 이 일지를 수정했습니다.`, '최신 불러오기', ()=>{
+        if(confirm('내가 고친 내용은 사라지고 최신 내용으로 바뀝니다. 불러올까요?')) applyRemote(snap);
+      });
+    }
+  });
+}
+function hydrate(log){
+  const base = blankLog(log.date);
+  const c = {
+    ...base, ...log,
+    staff:   staffRows(log.staff),
+    cameras: (log.cameras||[]).map(({model, position, ...r})=>({ ...ROW_BLANK.cameras(), ...r, type: r.type ?? model ?? '', director: r.director ?? position ?? '' })),
+    audio:   normRows('audio', log.audio),
+    lines:   (log.lines||[]).map(({route, band, ip, ...r})=>({...ROW_BLANK.lines(), ...r, method: fixMethod(r.method ?? log.txMethod), tx: r.tx ?? route ?? '', txIp: r.txIp ?? ip ?? band ?? ''})),
+    ...Object.fromEntries(['intercom','monitors','phases','prep','gear'].filter(k=>log[k]).map(k=>[k, normRows(k, log[k])])),
+    photos:  (log.photos||[]).map(p=>({ ...p, src: p.url || null }))
+  };
+  delete c.txMethod;
+  return c;
+}
+
+function getPath(obj, path){ return path.split('.').reduce((o,k)=>o?.[k], obj); }
+function setPath(obj, path, v){ const ks = path.split('.'); const last = ks.pop(); ks.reduce((o,k)=>o[k], obj)[last] = v; }
+
+/* --- 시간 선택: 오전/오후 · 시 · 분 (오전이 위, 저장값은 HH:MM 24시간) --- */
+function buildTimeSelects(){
+  const hours = [12,1,2,3,4,5,6,7,8,9,10,11];
+  form.querySelectorAll('.tsel').forEach(w=>{
+    const k = w.dataset.t;
+    w.innerHTML = `
+      <select data-tk="${k}" data-tp="ap"><option value="">--</option><option value="am">오전</option><option value="pm">오후</option></select>
+      <select data-tk="${k}" data-tp="h"><option value="">시</option>${hours.map(h=>`<option value="${h%12}">${h}시</option>`).join('')}</select>
+      <select data-tk="${k}" data-tp="m"><option value="">분</option>${Array.from({length:60},(_,i)=>`<option value="${pad(i)}">${pad(i)}분</option>`).join('')}</select>`;
+  });
+}
+function tselParts(k){ return Object.fromEntries([...form.querySelectorAll(`[data-tk="${k}"]`)].map(s=>[s.dataset.tp, s])); }
+function fillTime(k){
+  const s = tselParts(k), v = cur[k] || '';
+  const m = /^(\d{1,2}):(\d{2})/.exec(v);
+  if(!m){ s.ap.value = s.h.value = s.m.value = ''; return; }
+  const h = +m[1];
+  s.ap.value = h < 12 ? 'am' : 'pm'; s.h.value = String(h % 12); s.m.value = m[2];
+}
+function readTime(k, changed){
+  const s = tselParts(k);
+  if(changed !== 'ap' && s.h.value !== '' && !s.ap.value) s.ap.value = 'am';
+  if(s.h.value !== '' && !s.m.value) s.m.value = '00';
+  if(!s.ap.value || s.h.value === ''){ cur[k] = ''; return; }
+  cur[k] = `${pad(+s.h.value + (s.ap.value==='pm' ? 12 : 0))}:${s.m.value || '00'}`;
+}
+function fmtTime(v){
+  const m = /^(\d{1,2}):(\d{2})/.exec(v || ''); if(!m) return '';
+  const h = +m[1]; return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${m[2]}`;
+}
+buildTimeSelects();
+
+function renderEdit(){
+  form.querySelectorAll('[data-k]').forEach(el=>{
+    const v = getPath(cur, el.dataset.k);
+    if(el.tagName==='SELECT' && v && ![...el.options].some(o=>o.value===v)) el.add(new Option(v, v));
+    if(el.type==='checkbox') el.checked = !!v; else el.value = v ?? '';
+    el.classList.remove('invalid');
+  });
+  ['start','end','setup','teardown'].forEach(fillTime);
+  ['staff','cameras','audio','intercom','monitors','lines','phases','prep','gear'].forEach(k=>renderRows(k)); renderPhotos();
+  updateHeaderState();
+}
+
+function updateHeaderState(){
+  const lbl = dateLabel(cur.date || selectedDate);
+  $('editState').textContent = `${lbl.main} ${lbl.dow}`;
+  $('deleteBtn').textContent = cur.id ? '삭제' : '취소';
+  $('savedInfo').textContent = cur.updatedAt ? `마지막 저장 ${new Date(cur.updatedAt).toLocaleString('ko-KR')}${cur.updatedBy ? ' · ' + cur.updatedBy : ''}${cur.createdBy && cur.createdBy !== cur.updatedBy ? ' (최초 작성 ' + cur.createdBy + ')' : ''}` : '아직 저장되지 않은 새 일지입니다.';
+}
+
+/* --- 인력 --- */
+/* 이름 추천: 구분(역할)별로 예전에 입력한 이름을 기억 */
+const optList = arr => arr.map(n=>`<option value="${esc(n)}">`).join('');
+function staffListHtml(i){
+  const names = lsGet('pd_names', {});
+  return `<datalist id="dl-sn-${i}">${optList(names['role:'+(cur.staff[i]?.role||'').trim()] || [])}</datalist>`;
+}
+function renderStaffLists(){
+  const names = lsGet('pd_names', {});
+  $('staffLists').innerHTML = cur.staff.map((_,i)=>staffListHtml(i)).join('');
+  $('dl-roles').innerHTML = optList([...new Set([...ROLE_SUGGEST, ...lsGet('pd_roles', [])])]);
+  $('dl-camdir').innerHTML = optList(names['role:카메라감독'] || []);
+  $('dl-author').innerHTML = optList(names.author || []);
+}
+function rememberNames(){
+  const names = lsGet('pd_names', {});
+  const push = (k, v)=>{ v = (v||'').trim(); if(!v || v.length > 20) return; const arr = (names[k]||[]).filter(x=>x!==v); arr.unshift(v); names[k] = arr.slice(0,15); };
+  const roles = lsGet('pd_roles', []);
+  cur.staff.forEach(r=>{
+    const role = (r.role||'').trim(); if(!role) return;
+    push('role:'+role, r.name);
+    if(!ROLE_SUGGEST.includes(role) && !roles.includes(role) && role.length <= 15) roles.push(role);
+  });
+  cur.cameras.forEach(c=> push('role:카메라감독', c.director));
+  push('author', cur.author);
+  lsSet('pd_names', names);
+  lsSet('pd_roles', roles.slice(-30));
+  lsSet('pd_lastAuthor', cur.author || '');
+}
+
+/* --- 표 형태 행 (인력 / 카메라 / 오디오 / 인터컴 / 모니터 / 단계 / 체크리스트) --- */
+const chkCount = ()=>{ const all = [...cur.prep, ...cur.gear]; return `${all.filter(r=>r.done).length}/${all.length} 완료`; };
+const ROW_DEF = {
+  staff:    { body:'staffBody', count:'staffCount', unit:n=>`총 ${n}명`,
+    cells: [ ['role','dl-roles','구분'], ['name', i=>`dl-sn-${i}`, '이름'] ] },
+  cameras:  { body:'camBody', count:'camCount', unit:n=>`총 ${n}대`,
+    no: i=>`CAM${i+1}`,
+    cells: [ ['type','dl-camtype'], ['director','dl-camdir'], ['support','dl-support'] ],
+    extra: ['note','부착 장비 · 비고 (예: 프롬프터, LTE 라우터)'] },
+  audio:    { body:'audBody', count:'audCount', unit:n=>`총 ${n}ch`,
+    no: i=>`${i+1}`,
+    cells: [ ['channel',''], ['mic',''], ['wire','dl-wire'] ] },
+  intercom: { body:'icomBody', count:'icomCount', unit:n=>`총 ${n}`,
+    cells: [ ['user','dl-icomuser','사용자'], ['gear','dl-icomgear','헤드셋 / 이어셋'], ['wire','dl-wire'] ] },
+  monitors: { body:'monBody', count:'monCount', unit:n=>`총 ${n}`,
+    cells: [ ['use','','용도'], ['gear','','장비'], ['source','','예) R/S 1'] ] },
+  phases:   { body:'phaseBody',
+    cells: [ ['phase','','단계'], ['video','','예) F/S 1 (HDMSPGM_1)'], ['audio','','예) AUX 3 / N-1'] ] },
+  prep:     { body:'prepBody', count:'chkCount', unit:chkCount,
+    cells: [ ['done','','','check'], ['text','','점검 항목'] ] },
+  gear:     { body:'gearBody', count:'chkCount', unit:chkCount,
+    cells: [ ['done','','','check'], ['text','','준비물'] ] },
+  lines:    { body:'lineBody', count:'lineCount', unit:n=>`총 ${n}회선` }
+};
+function updateCount(kind){ const d = ROW_DEF[kind]; if(d?.count) $(d.count).textContent = d.unit(cur[kind].length); }
+
+/* 전송망: 회선마다 카드 한 장 — 회선/주·예/방향/상태, 전송방식/회선망/대역폭, 송신측, 수신측, 비고 */
+const TX_METHODS = ['LTE 번들','전용회선','SRT','광랜','M/W','기타'];
+const LINE_STATUS = ['정상','불량','대기','미사용'];
+const LINE_DIR = ['송출','리턴','양방향'];
+const LINE_MAIN = ['주','예비'];
+const SIDE_LABEL = {
+  '송출':   ['송신 · 중계차', '수신 · 연주소'],
+  '리턴':   ['송신 · 연주소', '수신 · 중계차'],
+  '양방향': ['중계차 측', '연주소 측'],
+  '':       ['송신', '수신']
+};
+function renderLines(){
+  const rows = cur.lines;
+  const inp = (i, f, attrs='') => `<input data-row="lines" data-i="${i}" data-f="${f}" ${attrs} value="${esc(rows[i][f])}">`;
+  const sel = (i, f, opts, first) => {
+    const v = rows[i][f] || '';
+    const all = v && !opts.includes(v) ? [...opts, v] : opts;   // 예전 값도 보이게
+    return `<select data-row="lines" data-i="${i}" data-f="${f}"><option value="">${first}</option>${all.map(o=>`<option${o===v?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  };
+  const fld = (label, html) => `<div class="f"><span>${label}</span>${html}</div>`;
+  $('lineBody').innerHTML = rows.length ? rows.map((r,i)=>{
+    const [txL, rxL] = SIDE_LABEL[r.dir] || SIDE_LABEL[''];
+    return `
+    <div class="lcard">
+      <div class="lc-top">
+        ${inp(i,'name','list="dl-line" placeholder="회선"')}
+        ${sel(i,'main',LINE_MAIN,'주/예')}
+        ${sel(i,'dir',LINE_DIR,'방향')}
+        ${sel(i,'status',LINE_STATUS,'상태')}
+        <button type="button" class="rowdel" data-del="lines" data-i="${i}" aria-label="회선 삭제">✕</button>
+      </div>
+      <div class="lc-3 lc-net">
+        ${fld('전송방식', sel(i,'method',TX_METHODS,'선택'))}
+        ${fld('회선망', inp(i,'net','list="dl-net"'))}
+        ${fld('대역폭', inp(i,'rate','list="dl-rate"'))}
+      </div>
+      <div class="lc-side tx"><div class="lc-tag">${txL}</div>
+        <div class="lc-3">
+          ${fld('신호', inp(i,'txSig'))}
+          ${fld('장비', inp(i,'tx'))}
+          ${fld('IP', inp(i,'txIp'))}
+        </div>
+      </div>
+      <div class="lc-side rx"><div class="lc-tag">${rxL}</div>
+        <div class="lc-3">
+          ${fld('장비', inp(i,'rx'))}
+          ${fld('IP', inp(i,'rxIp'))}
+          ${fld('신호', inp(i,'rxSig'))}
+        </div>
+      </div>
+      <div class="lc-note">${fld('비고', inp(i,'note','placeholder="예) 저지연, 중계차 DHCP, 서버2 동시사용"'))}</div>
+    </div>`;
+  }).join('') : `<div class="photo-empty">회선이 없습니다.</div>`;
+  updateCount('lines');
+}
+function renderRows(kind){
+  if(kind==='lines') return renderLines();
+  const def = ROW_DEF[kind], rows = cur[kind];
+  const cols = def.cells.length + (def.no ? 2 : 1);
+  const span = def.extra ? ' rowspan="2"' : '';
+  const cell = (r, i, [f, list, ph, type], ci) => {
+    if(type === 'check') return `<td><label class="chk"><input type="checkbox" data-row="${kind}" data-i="${i}" data-f="${f}"${r[f]?' checked':''}></label></td>`;
+    const l = typeof list === 'function' ? list(i) : list;
+    return `<td${!def.no && ci===0 ? ' class="rowhead"' : ''}><input data-row="${kind}" data-i="${i}" data-f="${f}" ${l?`list="${l}"`:''} ${ph?`placeholder="${ph}"`:''} value="${esc(r[f])}"></td>`;
+  };
+  $(def.body).innerHTML = rows.length ? rows.map((r,i)=>`
+    <tr class="${def.extra ? 'grp-top' : ''}${r.done ? ' done' : ''}">
+      ${def.no ? `<td class="rowhead"${span}>${def.no(i)}</td>` : ''}
+      ${def.cells.map((c, ci)=>cell(r, i, c, ci)).join('')}
+      <td class="col-x"${span}><button type="button" class="rowdel" data-del="${kind}" data-i="${i}" aria-label="행 삭제">✕</button></td>
+    </tr>${def.extra ? `
+    <tr><td colspan="${def.cells.length}"><input class="extra" data-row="${kind}" data-i="${i}" data-f="${def.extra[0]}" placeholder="${def.extra[1]}" value="${esc(r[def.extra[0]])}"></td></tr>` : ''}`).join('')
+    : `<tr><td colspan="${cols}" style="color:#8b98a3;font-size:12px;padding:10px">항목이 없습니다</td></tr>`;
+  updateCount(kind);
+  if(kind==='staff') renderStaffLists();
+}
+form.addEventListener('click', e=>{
+  const del = e.target.closest('[data-del]');
+  if(del){ cur[del.dataset.del].splice(+del.dataset.i, 1); renderRows(del.dataset.del); markDirty(); return; }
+  const add = e.target.closest('[data-add]');
+  if(add){
+    const kind = add.dataset.add;
+    cur[kind].push(ROW_BLANK[kind]()); renderRows(kind); markDirty();
+    const first = $(ROW_DEF[kind].body).querySelector(`input[data-i="${cur[kind].length-1}"]:not([type=checkbox])`);
+    if(first) first.focus();
+  }
+});
+
+/* --- 입력 바인딩 --- */
+function markDirty(){ dirty = true; }
+form.addEventListener('input', e=>{
+  const el = e.target;
+  if(el.dataset.k){
+    setPath(cur, el.dataset.k, el.type==='checkbox' ? el.checked : el.value);
+    if(el.dataset.k==='date' && el.value) updateHeaderState();
+    if(el.dataset.k==='title') el.classList.remove('invalid');
+    markDirty();
+  }else if(el.dataset.tk){
+    readTime(el.dataset.tk, el.dataset.tp); markDirty();
+  }else if(el.dataset.row){
+    const kind = el.dataset.row;
+    cur[kind][+el.dataset.i][el.dataset.f] = el.type==='checkbox' ? el.checked : el.value; markDirty();
+    if(el.type==='checkbox'){ el.closest('tr')?.classList.toggle('done', el.checked); updateCount(kind); }
+    if(kind==='lines' && el.dataset.f==='dir') renderLines();   // 송신/수신 위치 표시 갱신
+    if(kind==='staff' && el.dataset.f==='role'){
+      const dl = $('dl-sn-'+el.dataset.i); if(dl) dl.outerHTML = staffListHtml(+el.dataset.i);
+    }
+  }else if(el.dataset.photo){
+    const p = cur.photos.find(x=>x.id===el.dataset.photo); if(p){ p.caption = el.value; markDirty(); }
+  }
+});
+/* 추천 목록(datalist) 칸은 값이 있으면 그 값과 맞는 항목만 보여서 다른 걸 못 고름 →
+   포커스 때 값을 잠시 비워 전체 목록을 보여주고, 아무것도 안 고르고 나가면 원래 값으로 되돌림 */
+form.addEventListener('focusin', e=>{
+  const el = e.target;
+  if(el.tagName!=='INPUT' || !el.getAttribute('list') || !el.value) return;
+  el.dataset.prev = el.value; el.dataset.ph = el.placeholder;
+  el.placeholder = el.value; el.value = '';
+});
+form.addEventListener('input', e=>{ if(e.target.dataset.prev !== undefined) e.target.dataset.edited = '1'; }, true);
+form.addEventListener('focusout', e=>{
+  const el = e.target;
+  if(el.dataset.prev === undefined) return;
+  if(!el.value && !el.dataset.edited) el.value = el.dataset.prev;
+  el.placeholder = el.dataset.ph || '';
+  delete el.dataset.prev; delete el.dataset.ph; delete el.dataset.edited;
+});
+form.addEventListener('change', e=>{ if(e.target.type==='checkbox' && e.target.dataset.k){ setPath(cur, e.target.dataset.k, e.target.checked); markDirty(); } });
+
+/* =========================================================
+   PHOTOS
+   ========================================================= */
+function renderPhotos(){
+  const g = $('photoGrid');
+  g.innerHTML = cur.photos.map(p=>`
+    <div class="photo">
+      ${p.src ? `<img class="thumb" src="${esc(p.src)}" data-view="${esc(p.id)}" alt="">` : `<div class="thumb loading">${p.error ? '불러오기 실패' : '불러오는 중…'}</div>`}
+      ${p.pending ? '<span class="badge">저장 전</span>' : ''}
+      <button type="button" class="rowdel" data-delphoto="${esc(p.id)}" aria-label="사진 삭제">✕</button>
+      <input data-photo="${esc(p.id)}" value="${esc(p.caption)}" placeholder="사진 설명">
+    </div>`).join('');
+  $('photoEmpty').style.display = cur.photos.length ? 'none' : '';
+  $('photoCount').textContent = `${cur.photos.length}장`;
+}
+$('photoGrid').addEventListener('click', e=>{
+  const d = e.target.closest('[data-delphoto]');
+  if(d){
+    if(!confirm('이 사진을 삭제할까요? (저장해야 반영됩니다)')) return;
+    const idx = cur.photos.findIndex(p=>p.id===d.dataset.delphoto);
+    const [p] = cur.photos.splice(idx, 1);
+    if(!p.pending) removedPhotos.push(p);
+    renderPhotos(); markDirty(); return;
+  }
+  const v = e.target.closest('[data-view]');
+  if(v){ $('viewerImg').src = v.src; $('viewer').classList.add('open'); }
+});
+$('viewer').onclick = ()=> $('viewer').classList.remove('open');
+
+async function loadPhotoData(){
+  const target = cur;
+  const need = target.photos.filter(p=>!p.src && p.kind==='firestore');
+  await Promise.all(need.map(async p=>{
+    try{
+      const s = await getDoc(doc(db, PHOTO_COLLECTION, p.id));
+      if(s.exists()) p.src = s.data().data; else p.error = true;
+    }catch(e){ p.error = true; }
+  }));
+  if(cur === target && currentTab==='edit') renderPhotos();
+}
+
+function loadImage(file){
+  return new Promise((res, rej)=>{
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = ()=>{ URL.revokeObjectURL(url); res(img); };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); rej(new Error('이미지를 읽을 수 없습니다')); };
+    img.src = url;
+  });
+}
+/* 긴 변 1600px 로 줄여 JPEG 로 변환. firestore 저장 방식이면 문서 한도 아래로 들어올 때까지 품질/크기를 더 낮춤 */
+async function compressImage(file){
+  const img = await loadImage(file);
+  const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
+  let side = PHOTO_LONG_SIDE, q = 0.85, out = '';
+  for(let i=0; i<10; i++){
+    const scale = Math.min(1, side / Math.max(img.naturalWidth, img.naturalHeight));
+    canvas.width = Math.round(img.naturalWidth*scale); canvas.height = Math.round(img.naturalHeight*scale);
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    out = canvas.toDataURL('image/jpeg', q);
+    if(PHOTO_BACKEND !== 'firestore' || out.length < FS_PHOTO_LIMIT) break;
+    if(q > 0.6) q -= 0.1; else side = Math.round(side * 0.8);
+  }
+  return out;
+}
+$('photoInput').addEventListener('change', async e=>{
+  const files = [...e.target.files]; e.target.value = '';
+  if(!files.length) return;
+  toast(`사진 ${files.length}장 처리 중…`);
+  for(const f of files){
+    try{
+      const src = await compressImage(f);
+      cur.photos.push({ id: uid(), caption:'', src, pending:true, kind: PHOTO_BACKEND });
+    }catch(err){ toast(`${f.name}: ${err.message}`, true); }
+  }
+  renderPhotos(); markDirty();
+});
+
+async function uploadPhoto(p, logId, date){
+  if(PHOTO_BACKEND === 'storage'){
+    const path = `production-photos/${date}/${logId}_${p.id}.jpg`;
+    const blob = await (await fetch(p.src)).blob();
+    const r = sRef(getStorage(fbApp), path);
+    await uploadBytes(r, blob, { contentType:'image/jpeg' });
+    return { id:p.id, caption:p.caption||'', kind:'storage', path, url: await getDownloadURL(r) };
+  }
+  await setDoc(doc(db, PHOTO_COLLECTION, p.id), { logId, date, data:p.src, createdAt: Date.now() });
+  return { id:p.id, caption:p.caption||'', kind:'firestore' };
+}
+async function removePhoto(p){
+  try{
+    if(p.kind==='storage' && p.path) await deleteObject(sRef(getStorage(fbApp), p.path));
+    else if(p.kind==='firestore') await deleteDoc(doc(db, PHOTO_COLLECTION, p.id));
+  }catch(e){ console.warn('사진 삭제 실패', e); }
+}
+
+/* =========================================================
+   SAVE / PRINT / DELETE
+   ========================================================= */
+function setBusy(b, label){
+  saving = b;
+  ['saveBtn','printBtn','deleteBtn'].forEach(id=> $(id).disabled = b);
+  $('saveBtn').textContent = b ? (label||'저장 중…') : '저장';
+}
+
+$('saveBtn').onclick = async ()=>{
+  if(saving) return;
+  const titleEl = form.querySelector('[data-k="title"]');
+  if(!cur.title.trim()){ titleEl.classList.add('invalid'); titleEl.focus(); toast('프로그램 제목을 입력하세요', true); return; }
+  if(!cur.date){ toast('날짜를 입력하세요', true); return; }
+  const me = askMe();
+  if(!me){ toast('이름을 입력해야 저장할 수 있습니다', true); return; }
+  setBusy(true);
+  try{
+    // 내가 연 뒤에 다른 사람이 먼저 저장했는지 확인 (덮어쓰기 방지)
+    if(cur.id){
+      const snap = await getDoc(doc(db, LOG_COLLECTION, cur.id));
+      if(!snap.exists()){
+        if(!confirm('다른 사용자가 이 일지를 삭제했습니다.\n내 내용으로 다시 저장할까요?')){ return; }
+      }else{
+        const s = snap.data();
+        if(s.updatedAt && s.updatedAt !== cur.updatedAt &&
+           !confirm(`${s.updatedBy || '다른 사용자'}님이 ${fmtWhen(s.updatedAt)}에 이 일지를 먼저 수정했습니다.\n\n[확인] 내 내용으로 덮어쓰기\n[취소] 저장하지 않음 (위 '최신 불러오기'로 확인)`)){
+          showBanner(`${s.updatedBy || '다른 사용자'}님이 ${fmtWhen(s.updatedAt)}에 이 일지를 수정했습니다.`, '최신 불러오기', ()=>{
+            if(confirm('내가 고친 내용은 사라지고 최신 내용으로 바뀝니다. 불러올까요?')) applyRemote(snap);
+          });
+          return;
+        }
+      }
+    }
+    const id = cur.id || doc(collection(db, LOG_COLLECTION)).id;
+    const pendingCount = cur.photos.filter(p=>p.pending).length;
+    let done = 0;
+    const photos = [];
+    for(const p of cur.photos){
+      if(p.pending){
+        setBusy(true, `사진 ${++done}/${pendingCount}…`);
+        const meta = await uploadPhoto(p, id, cur.date);
+        photos.push(meta);
+        Object.assign(p, meta, { pending:false, src: meta.url || p.src });
+      }else{
+        const { src, error, pending, ...meta } = p;
+        photos.push({ ...meta, caption: p.caption||'' });
+      }
+    }
+    setBusy(true);
+    const now = Date.now();
+    const { id:_i, photos:_p, ...rest } = cur;
+    const payload = JSON.parse(JSON.stringify({ ...rest, photos,
+      createdAt: cur.createdAt || now, createdBy: cur.createdBy || me, updatedAt: now, updatedBy: me }));
+    await setDoc(doc(db, LOG_COLLECTION, id), payload);
+    for(const p of removedPhotos) await removePhoto(p);
+    removedPhotos = [];
+    Object.assign(cur, { id, createdAt: payload.createdAt, createdBy: payload.createdBy, updatedAt: now, updatedBy: me });
+    selectedDate = cur.date; calState.cursor = parseKey(cur.date);
+    rememberNames(); renderStaffLists(); renderPhotos();
+    dirty = false; hideBanner(); updateHeaderState(); watchDoc();
+    toast('저장되었습니다');
+  }catch(e){
+    console.error(e);
+    toast('저장 실패: ' + (e.code || e.message), true);
+  }finally{ setBusy(false); }
+};
+
+$('printBtn').onclick = ()=>{
+  document.querySelectorAll('[data-print]').forEach(el=> el.textContent = cur[el.dataset.print] || '');
+  const old = document.title;
+  document.title = `제작일지_${cur.date}_${(cur.title||'제목없음').replace(/[\\/:*?"<>|]/g,'')}`;
+  const restore = ()=>{ document.title = old; window.removeEventListener('afterprint', restore); };
+  window.addEventListener('afterprint', restore);
+  window.print();
+};
+
+$('deleteBtn').onclick = async ()=>{
+  if(saving) return;
+  if(!cur.id){
+    if(dirty && !confirm('작성 중인 내용을 버릴까요?')) return;
+    dirty = false; cur = null; switchTab('list', {force:true}); return;
+  }
+  if(!confirm(`'${cur.title || '제목 없음'}' 제작일지를 삭제할까요?\n사진도 함께 삭제되며 되돌릴 수 없습니다.`)) return;
+  setBusy(true, '삭제 중…');
+  try{
+    await deleteDoc(doc(db, LOG_COLLECTION, cur.id));
+    for(const p of [...cur.photos.filter(p=>!p.pending), ...removedPhotos]) await removePhoto(p);
+    toast('삭제되었습니다');
+    dirty = false; cur = null;
+    switchTab('list', {force:true});
+  }catch(e){ console.error(e); toast('삭제 실패: ' + (e.code || e.message), true); }
+  finally{ setBusy(false); }
+};
+
+/* =========================================================
+   BACKUP (월별 / 전체 JSON)
+   ========================================================= */
+const bk = { cursor: new Date() };
+function openBackup(){
+  bk.cursor = new Date(calState.cursor.getFullYear(), calState.cursor.getMonth(), 1);
+  updateBkLabel(); $('bkStatus').textContent = ''; $('bkStatus').classList.remove('err');
+  $('bkOverlay').classList.add('open');
+}
+function updateBkLabel(){ $('bkMonthLabel').textContent = `${bk.cursor.getFullYear()}년 ${pad(bk.cursor.getMonth()+1)}월`; }
+$('bkPrev').onclick = ()=>{ bk.cursor = new Date(bk.cursor.getFullYear(), bk.cursor.getMonth()-1, 1); updateBkLabel(); };
+$('bkNext').onclick = ()=>{ bk.cursor = new Date(bk.cursor.getFullYear(), bk.cursor.getMonth()+1, 1); updateBkLabel(); };
+$('bkCancel').onclick = ()=> $('bkOverlay').classList.remove('open');
+$('bkOverlay').addEventListener('click', e=>{ if(e.target.id==='bkOverlay') $('bkOverlay').classList.remove('open'); });
+document.querySelectorAll('input[name="bkScope"]').forEach(r=> r.onchange = ()=>{
+  $('bkMonthRow').classList.toggle('hidden', document.querySelector('input[name="bkScope"]:checked').value !== 'month');
+});
+$('bkRun').onclick = async ()=>{
+  const scope = document.querySelector('input[name="bkScope"]:checked').value;
+  const withPhotos = $('bkPhotos').checked;
+  const st = $('bkStatus'); st.classList.remove('err'); st.textContent = '불러오는 중…';
+  $('bkRun').disabled = true;
+  try{
+    let q = collection(db, LOG_COLLECTION), label = '전체';
+    if(scope==='month'){
+      const y = bk.cursor.getFullYear(), m = bk.cursor.getMonth();
+      const [a,b] = monthRange(y, m);
+      q = query(q, where('date','>=',a), where('date','<=',b));
+      label = `${y}-${pad(m+1)}`;
+    }
+    const snap = await getDocs(q);
+    const logs = snap.docs.map(d=>({ id:d.id, ...d.data() })).sort((a,b)=> (a.date+(a.start||'')).localeCompare(b.date+(b.start||'')));
+    if(withPhotos){
+      let i = 0; const all = logs.flatMap(l=> (l.photos||[]).filter(p=>p.kind==='firestore'));
+      for(const l of logs) for(const p of (l.photos||[])){
+        if(p.kind!=='firestore') continue;
+        st.textContent = `사진 ${++i}/${all.length} 불러오는 중…`;
+        try{ const s = await getDoc(doc(db, PHOTO_COLLECTION, p.id)); if(s.exists()) p.data = s.data().data; }catch(e){}
+      }
+    }
+    const out = { app:'기술국 제작일지', scope: label, exportedAt: new Date().toISOString(), count: logs.length, logs };
+    const blob = new Blob([JSON.stringify(out, null, 2)], { type:'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = `제작일지_백업_${label}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=> URL.revokeObjectURL(a.href), 2000);
+    st.textContent = `${logs.length}건을 내려받았습니다.`;
+  }catch(e){
+    console.error(e); st.classList.add('err'); st.textContent = '백업 실패: ' + (e.code || e.message);
+  }finally{ $('bkRun').disabled = false; }
+};
+
+/* =========================================================
+   INIT
+   ========================================================= */
+renderCalendar();
+</script>
+</body>
+</html>
