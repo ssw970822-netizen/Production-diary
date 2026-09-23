@@ -148,11 +148,6 @@
   .sheet tr.grp-top td { border-top:2px solid #8a99a6; }
   .sheet td input.extra { text-align:left; font-size:12px; }
   /* 체크리스트 */
-  .subhead { font-weight:800; color:#344f67; font-size:13px; margin:0 0 6px; }
-  .check-table td { padding:3px 4px; }
-  .check-table .chk { border:0; padding:0; height:auto; justify-content:center; background:transparent; }
-  .sheet .check-table td input:not([type=checkbox]) { text-align:left; }
-  .check-table tr.done input:not([type=checkbox]) { color:#8b98a3; text-decoration:line-through; }
   /* 전송망 카드 */
   .lcard { border:1px solid #aeb8c1; border-radius:8px; padding:8px; margin-bottom:8px; background:#fff; break-inside:avoid; }
   .lc-top { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,.85fr) minmax(0,1.15fr) minmax(0,.95fr) 28px; gap:4px; align-items:center; }
@@ -433,21 +428,6 @@
             </table>
             <button type="button" class="addrow" data-add="phases">+ 단계 추가</button>
           </div></div>
-
-          <!-- 준비 · 점검 -->
-          <div class="card"><div class="title">준비 · 점검 <span class="count" id="chkCount">0/0</span></div><div class="sec">
-            <div class="subhead">사전 점검</div>
-            <table class="check-table">
-              <colgroup><col style="width:44px"><col><col class="col-x"></colgroup>
-              <tbody id="prepBody"></tbody>
-            </table>
-            <button type="button" class="addrow" data-add="prep">+ 점검 항목 추가</button>
-            <div class="subhead" style="margin-top:14px">장비 준비물</div>
-            <table class="check-table">
-              <colgroup><col style="width:44px"><col><col class="col-x"></colgroup>
-              <tbody id="gearBody"></tbody>
-            </table>
-            <button type="button" class="addrow" data-add="gear">+ 준비물 추가</button>
           </div></div>
 
           <!-- 6. 현장 사진 -->
@@ -481,7 +461,6 @@
         <datalist id="dl-wire"><option value="무선"><option value="유선"></datalist>
         <datalist id="dl-line"><option value="PGM"><option value="리턴"><option value="인터컴"><option value="백업"></datalist>
         <datalist id="dl-net"><option value="KT 광랜(1)"><option value="KT 광랜(2)"><option value="KT 광랜(3)"><option value="LTE"></datalist>
-        <datalist id="dl-rate"><option value="6M"><option value="10M"><option value="18M"></datalist>
         <datalist id="dl-icomuser"><option value="ANC"><option value="FD"><option value="PD"><option value="카메라"><option value="오디오"></datalist>
         <datalist id="dl-icomgear"><option value="헤드셋"><option value="이어셋"><option value="무선 벨트팩"></datalist>
         <datalist id="dl-author"></datalist>
@@ -610,12 +589,6 @@ const DEFAULT_LINES = [
 const DEFAULT_INTERCOM = [['ANC','이어셋'], ['FD','헤드셋']];
 const DEFAULT_MONITORS = ['앵커용 On-Air 모니터', '현장용 프로젝터'];
 const DEFAULT_PHASES = ['생방송 직전', '생방송'];
-const DEFAULT_PREP = ['연주소 KT 전송장비 설치', '전송장비 / 제작장비 회로 구성', 'DVE 화면분할 구성 점검'];
-const DEFAULT_GEAR = [
-  '무선 마이크 & 수신기', '유선 마이크 (예비)', '현장 PA용 스피커', '오디오 케이블', '전원연장드럼 & 멀티콘센트',
-  '인터컴 송수신기 & 연장 UTP케이블', '인터컴 헤드셋 & 이어셋', '프롬프터', 'LTE 라우터',
-  '앵커용 On-Air 모니터', '프로젝터 & 스크린 · 지지대', 'HDMI 컨버터'
-];
 
 function blankLog(date){
   return {
@@ -630,8 +603,6 @@ function blankLog(date){
     monitors: DEFAULT_MONITORS.map(use=>({ ...ROW_BLANK.monitors(), use })),
     lines: DEFAULT_LINES.map(([name, main, dir])=>({ ...ROW_BLANK.lines(), name, main, dir })),
     phases: DEFAULT_PHASES.map(phase=>({ ...ROW_BLANK.phases(), phase })),
-    prep: DEFAULT_PREP.map(text=>({ text, done:false })),
-    gear: DEFAULT_GEAR.map(text=>({ text, done:false })),
     photos: [],
     progress:'', issues:''
   };
@@ -644,9 +615,7 @@ const ROW_BLANK = {
   monitors: ()=>({ use:'', gear:'', source:'' }),
   lines:    ()=>({ name:'', main:'', dir:'송출', method:'', net:'', rate:'', status:'',
                    txSig:'', tx:'', txIp:'', rx:'', rxIp:'', rxSig:'', note:'' }),
-  phases:   ()=>({ phase:'', video:'', audio:'' }),
-  prep:     ()=>({ text:'', done:false }),
-  gear:     ()=>({ text:'', done:false })
+  phases:   ()=>({ phase:'', video:'', audio:'' })
 };
 const normRows = (kind, rows) => (rows||[]).map(r=>({ ...ROW_BLANK[kind](), ...r }));
 function staffRows(staff){
@@ -931,7 +900,7 @@ function hydrate(log){
     cameras: (log.cameras||[]).map(({model, position, ...r})=>({ ...ROW_BLANK.cameras(), ...r, type: r.type ?? model ?? '', director: r.director ?? position ?? '' })),
     audio:   normRows('audio', log.audio),
     lines:   (log.lines||[]).map(({route, band, ip, ...r})=>({...ROW_BLANK.lines(), ...r, method: fixMethod(r.method ?? log.txMethod), tx: r.tx ?? route ?? '', txIp: r.txIp ?? ip ?? band ?? ''})),
-    ...Object.fromEntries(['intercom','monitors','phases','prep','gear'].filter(k=>log[k]).map(k=>[k, normRows(k, log[k])])),
+    ...Object.fromEntries(['intercom','monitors','phases'].filter(k=>log[k]).map(k=>[k, normRows(k, log[k])])),
     photos:  (log.photos||[]).map(p=>({ ...p, src: p.url || null }))
   };
   delete c.txMethod;
@@ -981,7 +950,7 @@ function renderEdit(){
     el.classList.remove('invalid');
   });
   ['start','end','setup','teardown'].forEach(fillTime);
-  ['staff','cameras','audio','intercom','monitors','lines','phases','prep','gear'].forEach(k=>renderRows(k)); renderPhotos();
+  ['staff','cameras','audio','intercom','monitors','lines','phases'].forEach(k=>renderRows(k)); renderPhotos();
   updateHeaderState();
 }
 
@@ -1022,8 +991,7 @@ function rememberNames(){
   lsSet('pd_lastAuthor', cur.author || '');
 }
 
-/* --- 표 형태 행 (인력 / 카메라 / 오디오 / 인터컴 / 모니터 / 단계 / 체크리스트) --- */
-const chkCount = ()=>{ const all = [...cur.prep, ...cur.gear]; return `${all.filter(r=>r.done).length}/${all.length} 완료`; };
+/* --- 표 형태 행 (인력 / 카메라 / 오디오 / 인터컴 / 모니터 / 단계) --- */
 const ROW_DEF = {
   staff:    { body:'staffBody', count:'staffCount', unit:n=>`총 ${n}명`,
     cells: [ ['role','dl-roles','구분'], ['name', i=>`dl-sn-${i}`, '이름'] ] },
@@ -1040,15 +1008,11 @@ const ROW_DEF = {
     cells: [ ['use','','용도'], ['gear','','장비'], ['source','','예) R/S 1'] ] },
   phases:   { body:'phaseBody',
     cells: [ ['phase','','단계'], ['video','','예) F/S 1 (HDMSPGM_1)'], ['audio','','예) AUX 3 / N-1'] ] },
-  prep:     { body:'prepBody', count:'chkCount', unit:chkCount,
-    cells: [ ['done','','','check'], ['text','','점검 항목'] ] },
-  gear:     { body:'gearBody', count:'chkCount', unit:chkCount,
-    cells: [ ['done','','','check'], ['text','','준비물'] ] },
   lines:    { body:'lineBody', count:'lineCount', unit:n=>`총 ${n}회선` }
 };
 function updateCount(kind){ const d = ROW_DEF[kind]; if(d?.count) $(d.count).textContent = d.unit(cur[kind].length); }
 
-/* 전송망: 회선마다 카드 한 장 — 회선/주·예/방향/상태, 전송방식/회선망/대역폭, 송신측, 수신측, 비고 */
+/* 전송망: 회선마다 카드 한 장 — 회선/주·예/방향/상태, 전송방식/회선망, 송신측, 수신측, 비고 */
 const TX_METHODS = ['LTE 번들','전용회선','SRT','광랜','M/W','기타'];
 const LINE_STATUS = ['정상','불량','대기','미사용'];
 const LINE_DIR = ['송출','리턴','양방향'];
@@ -1079,10 +1043,9 @@ function renderLines(){
         ${sel(i,'status',LINE_STATUS,'상태')}
         <button type="button" class="rowdel" data-del="lines" data-i="${i}" aria-label="회선 삭제">✕</button>
       </div>
-      <div class="lc-3 lc-net">
+      <div class="lc-2 lc-net">
         ${fld('전송방식', sel(i,'method',TX_METHODS,'선택'))}
         ${fld('회선망', inp(i,'net','list="dl-net"'))}
-        ${fld('대역폭', inp(i,'rate','list="dl-rate"'))}
       </div>
       <div class="lc-side tx"><div class="lc-tag">${txL}</div>
         <div class="lc-2">
@@ -1107,7 +1070,6 @@ function renderRows(kind){
   const cols = def.cells.length + (def.no ? 2 : 1);
   const span = def.extra ? ' rowspan="2"' : '';
   const cell = (r, i, [f, list, ph, type], ci) => {
-    if(type === 'check') return `<td><label class="chk"><input type="checkbox" data-row="${kind}" data-i="${i}" data-f="${f}"${r[f]?' checked':''}></label></td>`;
     const l = typeof list === 'function' ? list(i) : list;
     return `<td${!def.no && ci===0 ? ' class="rowhead"' : ''}><input data-row="${kind}" data-i="${i}" data-f="${f}" ${l?`list="${l}"`:''} ${ph?`placeholder="${ph}"`:''} value="${esc(r[f])}"></td>`;
   };
